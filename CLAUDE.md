@@ -4,7 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is for an online (browser-based, multiplayer) version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. It is currently pre-code. The chosen stack (PRD §11) is TypeScript everywhere: a shared pure rules engine, a Node + Socket.IO server, and a React + Vite client, deployed as one Node service. Update this file with build/lint/test commands once they exist.
+This repo is for an online (browser-based, multiplayer) version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The chosen stack (PRD §11) is TypeScript everywhere: a shared pure rules engine, a Node + Socket.IO server, and a React + Vite client, deployed as one Node service. So far only `packages/engine` exists.
+
+## Commands
+
+npm workspaces, run from the repo root:
+
+- `npm test`: run all tests (Vitest)
+- `npx vitest run packages/engine/test/actions.test.ts -t "solo cut"`: run one file or one named test
+- `npm run test:watch`: watch mode
+- `npm run typecheck`: `tsc --noEmit` for the engine
+
+## Engine architecture (`packages/engine`)
+
+Pure, no I/O. Packages import it straight from TypeScript source (`exports: ./src/index.ts`, no build step).
+
+- `setup.ts`: `createGame` deals the deck for a difficulty (rng is injectable). `createGameFromHands` builds a state from explicit hands; tests use it.
+- `rules.ts`: rule predicates (`canSoloCut`, `legalActions`, win check). Both the server and the client use these.
+- `actions.ts`: `applyAction(state, action)` returns `{ ok, state, events }` or `{ ok: false, error }`. It never mutates its input. `events` feed the action log.
+- `view.ts`: `viewFor(state, playerId)` is the **only** thing the server should send a client. It hides other players' uncut wires (no color or value), and keeps setup reveals hidden until everyone has chosen.
+
+Engine conventions:
+- Wire ids are position-based (`<seat>-<index>`), so they never leak a wire's value. Keep it that way.
+- A wire's `value` is its sort key: blue integer, yellow X.1, red X.5.
+- Markers always show a wire's real value, so a wire only needs a `marked` flag.
+- A dual cut includes `ownWireId` up front. It's required only when the player holds more than one matching wire.
+- Test helpers live in `test/helpers.ts`. `playing({...hands})` gives a game that is already past the setup reveal.
 
 ## Product scope
 
