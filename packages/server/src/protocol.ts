@@ -76,5 +76,12 @@ export interface ServerToClientEvents {
   'room:state': (view: RoomView) => void;
 }
 
+/**
+ * The game is served under this path (huddle.kinddot.net/boom-buster/). The
+ * client's Vite `base` in packages/client/vite.config.ts must match it.
+ */
+export const BASE_PATH = '/boom-buster';
+export const SOCKET_PATH = `${BASE_PATH}/socket.io`;
+
 export const NAME_MIN = 2;
 export const NAME_MAX = 16;

@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ErrorCode, Joined, RoomView, ServerToClientEvents } from '@bomb-busters/server/protocol';
+import {
+  SOCKET_PATH,
+  type ClientToServerEvents,
+  type ErrorCode,
+  type Joined,
+  type RoomView,
+  type ServerToClientEvents,
+} from '@bomb-busters/server/protocol';
 import { tokens } from './storage';
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io({ path: SOCKET_PATH });
 
 export type Reply<T = object> = ({ ok: true } & T) | { ok: false; error: ErrorCode | 'TIMEOUT' };
 

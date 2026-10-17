@@ -4,6 +4,7 @@ import type { RoomView } from '@bomb-busters/server/protocol';
 import { useI18n, type Translate } from '../i18n';
 import { api } from '../net';
 import { nameOf } from '../format';
+import { roomPath } from '../paths';
 import { Header } from './Header';
 
 const LEVELS: Difficulty[] = ['simple', 'medium', 'hard'];
@@ -15,7 +16,7 @@ export function Lobby({ room, onError, onLeave }: { room: RoomView; onError: (co
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const isHost = room.hostId === room.you;
-  const link = `${location.origin}/r/${room.code}`;
+  const link = `${location.origin}${roomPath(room.code)}`;
   const seats = Array.from({ length: MAX_PLAYERS }, (_, i) => room.players[i]);
 
   const copy = async () => {

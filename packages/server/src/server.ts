@@ -2,7 +2,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { Server } from 'socket.io';
-import type { ClientToServerEvents, ServerToClientEvents } from './protocol.js';
+import { BASE_PATH, SOCKET_PATH, type ClientToServerEvents, type ServerToClientEvents } from './protocol.js';
 import { RoomManager } from './rooms.js';
 
 interface SocketData {
@@ -13,16 +13,23 @@ interface SocketData {
 type IO = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 export interface ServerOptions {
-  /** Built client to serve (packages/client/dist). Omit in dev, where Vite serves it. */
+  /** Built client to serve under BASE_PATH (packages/client/dist). Omit in dev, where Vite serves it. */
   staticDir?: string;
+  /** The game-picker page served at `/` (hub/index.html). */
+  hubFile?: string;
   rooms?: RoomManager;
   /** How long a room with nobody connected is kept before it's deleted. */
   emptyRoomTtlMs?: number;
 }
 
-export function createServer({ staticDir, rooms = new RoomManager(), emptyRoomTtlMs = 30 * 60_000 }: ServerOptions = {}) {
-  const http = createHttpServer((req, res) => serveStatic(staticDir, req.url ?? '/', res));
-  const io: IO = new Server(http);
+export function createServer({
+  staticDir,
+  hubFile,
+  rooms = new RoomManager(),
+  emptyRoomTtlMs = 30 * 60_000,
+}: ServerOptions = {}) {
+  const http = createHttpServer((req, res) => route(req.url ?? '/', res, staticDir, hubFile));
+  const io: IO = new Server(http, { path: SOCKET_PATH });
   const cleanup = new Map<string, NodeJS.Timeout>();
 
   async function broadcast(code: string) {
@@ -130,21 +137,41 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-/** Serves the built client, falling back to index.html so /r/CODE links work. */
-function serveStatic(dir: string | undefined, url: string, res: import('node:http').ServerResponse) {
-  if (!dir) {
-    res.writeHead(404).end();
+type Res = import('node:http').ServerResponse;
+
+/**
+ * `/` → the game picker; `/boom-buster/...` → the built client, falling back
+ * to its index.html so /boom-buster/r/CODE links work. Socket.IO handles its
+ * own path before this runs.
+ */
+function route(url: string, res: Res, staticDir?: string, hubFile?: string) {
+  let path: string;
+  try {
+    path = decodeURIComponent(url.split('?')[0]!);
+  } catch {
+    return notFound(res);
+  }
+  if (path === '/' || path === '/index.html') return hubFile ? sendFile(hubFile, res) : notFound(res);
+  if (path === BASE_PATH) {
+    res.writeHead(301, { Location: `${BASE_PATH}/` }).end();
     return;
   }
-  const root = resolve(dir);
-  const path = normalize(join(root, decodeURIComponent(url.split('?')[0]!)));
-  const file = path.startsWith(root) && existsSync(path) && statSync(path).isFile() ? path : join(root, 'index.html');
-  if (!existsSync(file)) {
-    res.writeHead(404).end();
-    return;
-  }
+  if (!staticDir || !path.startsWith(`${BASE_PATH}/`)) return notFound(res);
+
+  const root = resolve(staticDir);
+  const file = normalize(join(root, path.slice(BASE_PATH.length)));
+  const safe = file.startsWith(root + '/') && existsSync(file) && statSync(file).isFile();
+  sendFile(safe ? file : join(root, 'index.html'), res);
+}
+
+function sendFile(file: string, res: Res) {
+  if (!existsSync(file)) return notFound(res);
   res.writeHead(200, { 'Content-Type': MIME[extname(file)] ?? 'application/octet-stream' });
   createReadStream(file).pipe(res);
+}
+
+function notFound(res: Res) {
+  res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
 }
 
 export type { HttpServer };

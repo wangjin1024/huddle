@@ -56,6 +56,9 @@ export function Home({ inviteCode, initialError, onJoined, onBack }: HomeProps) 
     <div className="app">
       <Header />
       <main className="home">
+        <a className="back-link" href="/">
+          ← {t('allGames')}
+        </a>
         <h1>BOMB BUSTERS</h1>
         <p className="muted">{t('tagline')}</p>
         {error && (

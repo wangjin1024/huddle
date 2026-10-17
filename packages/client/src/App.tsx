@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errorText, useI18n } from './i18n';
 import { api, useRoom } from './net';
+import { BASE, codeFromPath, roomPath } from './paths';
 import { tokens } from './storage';
 import { Game } from './components/Game';
 import { Home } from './components/Home';
 import { Lobby } from './components/Lobby';
-
-const codeFromPath = () => /^\/r\/([A-Za-z0-9]{4})\/?$/.exec(location.pathname)?.[1]?.toUpperCase();
 
 export function App() {
   const { t } = useI18n();
@@ -17,7 +16,7 @@ export function App() {
   const [homeError, setHomeError] = useState<string>();
 
   const navigate = useCallback((next?: string) => {
-    history.pushState(null, '', next ? `/r/${next}` : '/');
+    history.pushState(null, '', next ? roomPath(next) : BASE);
     setCode(next);
   }, []);
 

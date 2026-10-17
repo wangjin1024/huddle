@@ -90,6 +90,8 @@ input::placeholder { color: var(--dim); }
 /* Home */
 .home { max-width: 440px; margin: 0 auto; padding: 48px 16px; display: flex; flex-direction: column; gap: 16px; }
 .home h1 { letter-spacing: 0.04em; }
+.back-link { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; font-size: 14px; }
+.back-link:hover { color: var(--text); }
 
 /* Lobby */
 .lobby { max-width: 1120px; margin: 0 auto; padding: 40px 24px; display: flex; flex-wrap: wrap; gap: 24px; }

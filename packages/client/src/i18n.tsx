@@ -3,6 +3,7 @@ import { load, save } from './storage';
 
 const en = {
   tagline: 'A cooperative wire-cutting deduction game for 2–5 players.',
+  allGames: 'All games',
   room: 'Room',
   connecting: 'Connecting…',
   connectionLost: 'Connection lost. Reconnecting…',
@@ -133,6 +134,7 @@ export type MessageKey = keyof typeof en;
 
 const zh: Record<MessageKey, string> = {
   tagline: '2–5 人合作推理剪线游戏。',
+  allGames: '所有游戏',
   room: '房间',
   connecting: '连接中…',
   connectionLost: '连接已断开，正在重连…',
@@ -267,7 +269,7 @@ export type Translate = (key: MessageKey, params?: Params) => string;
 const I18nContext = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: Translate } | null>(null);
 
 function initialLang(): Lang {
-  const saved = load('bb:lang');
+  const saved = load('huddle:lang');
   if (saved === 'en' || saved === 'zh') return saved;
   return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
@@ -276,7 +278,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    save('bb:lang', l);
+    save('huddle:lang', l);
     document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
   }, []);
   const t = useCallback<Translate>(

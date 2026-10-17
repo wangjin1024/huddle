@@ -10,13 +10,21 @@ This repo is for an online (browser-based, multiplayer) version of the cooperati
 
 Run from the repo root:
 
-- `npm run dev`: server (tsx watch, :3001) and Vite (:5173) together. Vite forwards `/socket.io` to the server. Open http://localhost:5173.
-- `npm run build && npm start`: production. The server serves `packages/client/dist` plus Socket.IO on `$PORT` (default 3001), with a fallback to `index.html` so `/r/CODE` links work.
+- `npm run dev`: server (tsx watch, :3001) and Vite (:5173) together. Vite forwards `/boom-buster/socket.io` to the server. Open http://localhost:5173/boom-buster/.
+- `npm run build && npm start`, or `./run.sh` (adds `npm install` and PM2 via `ecosystem.config.cjs`): production on `$HOST:$PORT` (default `0.0.0.0:3001`; read from `.env`).
 - `npm test`: all tests (Vitest), engine + server
 - `npx vitest run packages/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
 - `npm run typecheck`: `tsc --noEmit` for all three packages
 
 No package has a build step for its TypeScript. Workspace packages import each other's `.ts` source directly: tsx runs the server, and Vite bundles the client.
+
+## URLs and hosting
+
+Production is `huddle.kinddot.net`, with Caddy reverse-proxying everything to this one Node process:
+- `/`: `hub/index.html`, the static "Huddle" game picker (one card per game). Not part of the React build. Its EN/中文 text swaps via `data-i18n` keys and a small inline script. The language choice is saved under `huddle:lang`, the same key the game's `i18n.tsx` uses, so it carries over between them.
+- `/boom-buster/`: the game. Rooms are at `/boom-buster/r/CODE`, and the socket is at `/boom-buster/socket.io`.
+
+The base path is defined twice and both must match: `BASE_PATH` in `packages/server/src/protocol.ts`, and `base` in `packages/client/vite.config.ts`. Client code builds URLs from `src/paths.ts` (which uses `import.meta.env.BASE_URL`); never hard-code `/r/...`.
 
 ## Engine architecture (`packages/engine`)
 

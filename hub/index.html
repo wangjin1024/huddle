@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10141A" />
+    <title>Huddle · cooperative games for teams</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e5484d' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='14' r='7'/%3E%3Cpath d='M15.5 8.5 18 6M18 6c1-1 2.5-1 3 0'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #10141a;
+        --bar: #141920;
+        --panel: #161b22;
+        --line: #262e39;
+        --line-2: #2e3744;
+        --text: #e8ecf1;
+        --text-2: #c2cad4;
+        --muted: #9aa5b4;
+        --blue: #4c8dff;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'IBM Plex Sans', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .topbar { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--bar); }
+      .name { font-size: 18px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); }
+      .spacer { flex: 1; }
+      .lang { display: flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
+      .lang button { min-height: 36px; min-width: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+      .lang button[aria-pressed='true'] { background: #2a323d; color: var(--text); }
+      .lang button:focus-visible, .game:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+      main { max-width: 880px; margin: 0 auto; padding: 56px 16px 64px; }
+      h1 { margin: 0; font-size: 44px; line-height: 1.15; font-weight: 700; }
+      .lead { margin: 16px 0 0; max-width: 620px; color: var(--muted); font-size: 17px; line-height: 1.55; }
+      .principles { list-style: none; margin: 36px 0 44px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+      .principles li { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); line-height: 1.45; }
+      .principles strong { display: block; font-size: 16px; margin-bottom: 2px; }
+      .principles span { color: var(--muted); font-size: 14px; }
+      h2 { margin: 0 0 14px; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+      .game {
+        display: flex; flex-direction: column; gap: 14px; padding: 22px;
+        border-radius: 14px; background: var(--panel); border: 2px solid var(--line);
+        color: inherit; text-decoration: none;
+      }
+      .game:hover { border-color: var(--blue); }
+      .title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 20px; font-weight: 700; letter-spacing: 0.03em; }
+      .title small { white-space: nowrap; font-size: 14px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+      .desc { margin: 0; color: var(--text-2); font-size: 15px; line-height: 1.5; }
+      .meta { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tag { font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--muted); }
+      .play { margin-top: auto; align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; padding: 0 18px; border-radius: 10px; background: var(--blue); color: #0b1220; font-weight: 700; }
+      @media (max-width: 480px) {
+        .topbar { padding: 10px 16px; }
+        main { padding-top: 40px; }
+        h1 { font-size: 34px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <span class="name">Huddle</span>
+      <span class="spacer"></span>
+      <div class="lang" role="group" aria-label="Language / 语言">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+      </div>
+    </header>
+    <main>
+      <!-- Text is English in the markup; data-i18n keys are swapped from ZH below. -->
+      <h1 data-i18n="slogan">No opponents. Only teammates.</h1>
+      <p class="lead" data-i18n="lead">Every game here is cooperative: the whole team wins together or loses together.</p>
+      <ul class="principles">
+        <li><strong data-i18n="p1">Win or lose as one team</strong><span data-i18n="p1d">No scores against each other.</span></li>
+        <li><strong data-i18n="p2">Your own device</strong><span data-i18n="p2d">What you see stays private.</span></li>
+        <li><strong data-i18n="p3">No sign-up</strong><span data-i18n="p3d">Share a link and play.</span></li>
+      </ul>
+      <h2 data-i18n="games">Games</h2>
+      <div class="games">
+        <!-- Add a card per game; each game is served under its own path. -->
+        <a class="game" href="/boom-buster/">
+          <span class="title">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e5484d" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="14" r="7"></circle><path d="M15.5 8.5 18 6"></path><path d="M18 6c1-1 2.5-1 3 0"></path><path d="M8 12.5a3 3 0 0 1 3-2.5"></path></svg>
+            BOMB BUSTERS <small>炸弹克星</small>
+          </span>
+          <p class="desc" data-i18n="bbDesc">Cut every safe wire as a team, deducing your teammates' hidden wires without cutting a bomb.</p>
+          <span class="meta">
+            <span class="tag" data-i18n="bbPlayers">2–5 players</span>
+            <span class="tag" data-i18n="bbTime">20–30 min</span>
+            <span class="tag" data-i18n="coop">Co-op</span>
+          </span>
+          <span class="play" data-i18n="play">Play</span>
+        </a>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var ZH = {
+          title: 'Huddle · 团队合作游戏',
+          slogan: '没有对手，只有队友。',
+          lead: '这里只有合作游戏：全队一起赢，也一起输。',
+          p1: '同赢同输',
+          p1d: '队友之间不比分数。',
+          p2: '各用各的设备',
+          p2d: '你看到的，只有你知道。',
+          p3: '无需注册',
+          p3d: '分享链接就能玩。',
+          games: '游戏',
+          bbDesc: '全队一起剪断所有安全导线：推理队友藏起来的导线，千万别剪到炸弹。',
+          bbPlayers: '2–5 人',
+          bbTime: '20–30 分钟',
+          coop: '合作',
+          play: '开始玩',
+        };
+        // Same key as the games use, so the choice carries over into them.
+        var KEY = 'huddle:lang';
+        var nodes = document.querySelectorAll('[data-i18n]');
+        var EN = { title: document.title };
+        nodes.forEach(function (n) { EN[n.getAttribute('data-i18n')] = n.textContent; });
+
+        function apply(lang) {
+          var dict = lang === 'zh' ? ZH : EN;
+          nodes.forEach(function (n) { n.textContent = dict[n.getAttribute('data-i18n')]; });
+          document.title = dict.title;
+          document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+          document.querySelectorAll('.lang button').forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
+          });
+        }
+
+        var saved = null;
+        try { saved = localStorage.getItem(KEY); } catch (e) {}
+        var lang = saved === 'en' || saved === 'zh' ? saved
+          : (navigator.language || '').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+        apply(lang);
+
+        document.querySelectorAll('.lang button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var l = b.getAttribute('data-lang');
+            try { localStorage.setItem(KEY, l); } catch (e) {}
+            apply(l);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

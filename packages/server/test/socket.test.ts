@@ -1,7 +1,11 @@
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, RoomView, ServerToClientEvents } from '../src/protocol.js';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { get as httpGet } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { SOCKET_PATH, type ClientToServerEvents, type RoomView, type ServerToClientEvents } from '../src/protocol.js';
 import { createServer } from '../src/server.js';
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -9,8 +13,8 @@ type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 const cleanups: (() => void)[] = [];
 afterEach(() => cleanups.splice(0).forEach((fn) => fn()));
 
-async function start() {
-  const server = createServer();
+async function start(options: Parameters<typeof createServer>[0] = {}) {
+  const server = createServer(options);
   await new Promise<void>((r) => server.http.listen(0, r));
   const url = `http://localhost:${(server.http.address() as AddressInfo).port}`;
   cleanups.push(() => server.io.close());
@@ -19,7 +23,7 @@ async function start() {
 
 /** A client that records every raw room:state payload it receives. */
 function client(url: string) {
-  const socket: Client = connect(url, { transports: ['websocket'], forceNew: true });
+  const socket: Client = connect(url, { path: SOCKET_PATH, transports: ['websocket'], forceNew: true });
   const received: string[] = [];
   let latest: RoomView | null = null;
   socket.on('room:state', (view) => {
@@ -102,5 +106,35 @@ describe('socket server', () => {
     const { url } = await start();
     const c = client(url);
     expect(await c.socket.emitWithAck('game:start')).toEqual({ ok: false, error: 'NOT_IN_ROOM' });
+  });
+
+  it('serves the hub at / and the game under /boom-buster/', async () => {
+    const dist = mkdtempSync(join(tmpdir(), 'bb-dist-'));
+    writeFileSync(join(dist, 'index.html'), '<p>game</p>');
+    writeFileSync(join(dist, 'app.js'), 'console.log(1)');
+    const hubFile = join(dist, 'hub.html');
+    writeFileSync(hubFile, '<p>hub</p>');
+    const { url } = await start({ staticDir: dist, hubFile });
+    const get = (path: string) => fetch(url + path, { redirect: 'manual' });
+
+    expect(await (await get('/')).text()).toBe('<p>hub</p>');
+    const bare = await get('/boom-buster');
+    expect(bare.status).toBe(301);
+    expect(bare.headers.get('location')).toBe('/boom-buster/');
+    expect(await (await get('/boom-buster/')).text()).toBe('<p>game</p>');
+    expect(await (await get('/boom-buster/r/K7QX')).text()).toBe('<p>game</p>');
+    const js = await get('/boom-buster/app.js');
+    expect(js.headers.get('content-type')).toBe('text/javascript');
+    expect((await get('/r/K7QX')).status).toBe(404);
+    expect((await get('/other-game/')).status).toBe(404);
+    // fetch would normalise '..' away, so send the raw path to check it can't escape dist.
+    const raw = await new Promise<string>((resolve) =>
+      httpGet({ host: 'localhost', port: new URL(url).port, path: '/boom-buster/../../etc/passwd' }, (res) => {
+        let body = '';
+        res.on('data', (c) => (body += c));
+        res.on('end', () => resolve(body));
+      }),
+    );
+    expect(raw).toBe('<p>game</p>');
   });
 });
