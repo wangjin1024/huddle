@@ -4,8 +4,9 @@ import { createServer } from './server.js';
 
 const dist = fileURLToPath(new URL('../../client/dist', import.meta.url));
 const port = Number(process.env.PORT ?? 3001);
+const host = process.env.HOST || '0.0.0.0';
 const { http } = createServer({ staticDir: existsSync(dist) ? dist : undefined });
 
-http.listen(port, () => {
-  console.log(`Bomb Busters server on http://localhost:${port}`);
+http.listen(port, host, () => {
+  console.log(`Bomb Busters server on http://${host}:${port}`);
 });
