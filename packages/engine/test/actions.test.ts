@@ -165,6 +165,11 @@ describe('dual cut', () => {
     expect(result.ok && result.events.at(-1)).toEqual({ type: 'gameLost', reason: 'detonator' });
   });
 
+  it('rejects an unknown action type without passing the turn', () => {
+    const s = game();
+    expect(errorOf(s, { type: 'explode', player: 'A' } as never)).toBe('INVALID_ACTION');
+  });
+
   it('does not mutate the input state', () => {
     const s = game();
     const before = structuredClone(s);

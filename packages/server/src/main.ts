@@ -1,0 +1,11 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { createServer } from './server.js';
+
+const dist = fileURLToPath(new URL('../../client/dist', import.meta.url));
+const port = Number(process.env.PORT ?? 3001);
+const { http } = createServer({ staticDir: existsSync(dist) ? dist : undefined });
+
+http.listen(port, () => {
+  console.log(`Bomb Busters server on http://localhost:${port}`);
+});

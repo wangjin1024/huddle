@@ -75,6 +75,7 @@ export type GameEvent =
 
 export type ActionError =
   | 'GAME_OVER'
+  | 'INVALID_ACTION'
   | 'WRONG_PHASE'
   | 'NOT_YOUR_TURN'
   | 'UNKNOWN_PLAYER'

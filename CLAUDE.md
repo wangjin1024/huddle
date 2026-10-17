@@ -4,16 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is for an online (browser-based, multiplayer) version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The chosen stack (PRD §11) is TypeScript everywhere: a shared pure rules engine, a Node + Socket.IO server, and a React + Vite client, deployed as one Node service. So far only `packages/engine` exists.
+This repo is for an online (browser-based, multiplayer) version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The stack (PRD §11) is TypeScript everywhere, in npm workspaces: `packages/engine` (pure rules), `packages/server` (Node + Socket.IO), and `packages/client` (React + Vite). In production it deploys as one Node service.
 
 ## Commands
 
-npm workspaces, run from the repo root:
+Run from the repo root:
 
-- `npm test`: run all tests (Vitest)
-- `npx vitest run packages/engine/test/actions.test.ts -t "solo cut"`: run one file or one named test
-- `npm run test:watch`: watch mode
-- `npm run typecheck`: `tsc --noEmit` for the engine
+- `npm run dev`: server (tsx watch, :3001) and Vite (:5173) together. Vite forwards `/socket.io` to the server. Open http://localhost:5173.
+- `npm run build && npm start`: production. The server serves `packages/client/dist` plus Socket.IO on `$PORT` (default 3001), with a fallback to `index.html` so `/r/CODE` links work.
+- `npm test`: all tests (Vitest), engine + server
+- `npx vitest run packages/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
+- `npm run typecheck`: `tsc --noEmit` for all three packages
+
+No package has a build step for its TypeScript. Workspace packages import each other's `.ts` source directly: tsx runs the server, and Vite bundles the client.
 
 ## Engine architecture (`packages/engine`)
 
@@ -30,6 +33,23 @@ Engine conventions:
 - Markers always show a wire's real value, so a wire only needs a `marked` flag.
 - A dual cut includes `ownWireId` up front. It's required only when the player holds more than one matching wire.
 - Test helpers live in `test/helpers.ts`. `playing({...hands})` gives a game that is already past the setup reveal.
+
+## Server (`packages/server`)
+
+- `protocol.ts`: the socket event types and `RoomView`, shared with the client. The client imports it **as types only**, plus constants. Keep it free of Node imports.
+- `rooms.ts`: `RoomManager` holds the in-memory rooms and the join/leave/start rules, with no sockets. `toAction` copies only known fields from client input before anything reaches the engine.
+- `server.ts`: Socket.IO wiring. After every change it calls `broadcast(code)`, which sends each socket its **own** `RoomView`. Never `io.to(room).emit` game state.
+- Identity: each seat has a secret `token`, returned only in the join/create reply, never in broadcasts. Rejoining with it restores the seat, so a refresh or reconnect keeps your place. A disconnected player pauses the game; nobody can skip their turn.
+- The action log is broadcast to everyone, so it holds only public events (`PublicEvent`). Setup reveals are logged without their value.
+- `test/socket.test.ts` runs a real server and checks that no raw payload leaks hidden wires or tokens.
+
+## Client (`packages/client`)
+
+- `net.ts`: a single socket plus a typed `api` built on `emitWithAck`. `useRoom()` holds the latest `RoomView`. After any reconnect it re-joins with the stored token.
+- `i18n.tsx`: EN/中文 dictionaries. `zh` is typed `Record<MessageKey, string>`, so a missing translation is a type error. All UI text goes through `t()`.
+- Routing is just `/` and `/r/CODE` (`App.tsx`). The screens are `Home`, `Lobby`, `Game` (with a `Result` overlay), all in `components/`.
+- Legal moves come from `view.game.legal`, which the server computes. The client doesn't re-implement rules.
+- Visual design reference: the "Bomb Busters UI" canvas artifact. Colours live as CSS variables in `styles.css`.
 
 ## Product scope
 

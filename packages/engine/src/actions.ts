@@ -109,6 +109,9 @@ export function applyAction(prev: GameState, action: Action): ActionResult {
       events.push({ type: 'passed', player: player.id });
       break;
     }
+
+    default:
+      return fail('INVALID_ACTION');
   }
 
   if (isWon(state)) {
