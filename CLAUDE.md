@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is for an online (browser-based, multiplayer) version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The stack (PRD §11) is TypeScript everywhere, in npm workspaces: `packages/engine` (pure rules), `packages/server` (Node + Socket.IO), and `packages/client` (React + Vite). In production it deploys as one Node service.
+This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. Its first and so far only game is an online, browser-based multiplayer version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The `packages/*` workspaces (`@bomb-busters/*`) are that game. If a second game is added, give each game its own folder. The stack (PRD §11) is TypeScript everywhere, in npm workspaces: `packages/engine` (pure rules), `packages/server` (Node + Socket.IO), and `packages/client` (React + Vite). In production it deploys as one Node service.
 
 ## Commands
 

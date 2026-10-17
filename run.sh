@@ -3,8 +3,9 @@ set -e
 cd "$(dirname "$0")"
 
 # ── Production start ────────────────────────────────────────────────────────
-# Builds the React client and runs the Node + Socket.IO server, which serves
-# both the built client (packages/client/dist) and the game socket on one port.
+# Huddle (huddle.kinddot.net): one Node + Socket.IO process serves the game
+# picker at / (hub/index.html) and Bomb Busters at /boom-buster/ (the built
+# client in packages/client/dist plus its game socket), all on one port.
 #
 # Settings come from .env (optional):
 #   PORT  default 3001
@@ -33,16 +34,17 @@ fi
 mkdir -p logs
 # Recreate so ecosystem changes (env, script) are picked up — `pm2 restart`
 # alone reuses the old start parameters.
-$PM2 delete bomb-busters >/dev/null 2>&1 || true
+$PM2 delete huddle >/dev/null 2>&1 || true
+$PM2 delete bomb-busters >/dev/null 2>&1 || true   # the app's name before the repo was renamed
 $PM2 start ecosystem.config.cjs
 $PM2 save 2>/dev/null || true
 
 set -a; [ -f .env ] && . ./.env; set +a
 echo ""
-echo "✅ Bomb Busters running (production build) on ${HOST:-0.0.0.0}:${PORT:-3001}."
-echo "   Local URL:  http://localhost:${PORT:-3001}"
+echo "✅ Huddle running (production build) on ${HOST:-0.0.0.0}:${PORT:-3001}."
+echo "   Local URL:  http://localhost:${PORT:-3001}  (Bomb Busters: /boom-buster/)"
 echo ""
 echo "Useful commands:"
 echo "  $PM2 status               — show running status"
-echo "  $PM2 logs bomb-busters    — tail the logs"
-echo "  $PM2 stop bomb-busters    — stop the server"
+echo "  $PM2 logs huddle          — tail the logs"
+echo "  $PM2 stop huddle          — stop the server"

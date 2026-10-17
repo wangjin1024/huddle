@@ -19,7 +19,7 @@ function loadEnv(file) {
 module.exports = {
 	apps: [
 		{
-			name:         'bomb-busters',
+			name:         'huddle',
 			script:       'packages/server/src/main.ts',
 			interpreter:  'node',
 			interpreter_args: '--import tsx', // run the TypeScript server directly, as `npm start` does
