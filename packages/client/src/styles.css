@@ -164,13 +164,14 @@ button.wire.hidden:hover { border-color: #5a6676; }
 .wire-blue .stripe { background: var(--blue); }
 .wire-yellow .stripe { background: var(--yellow); }
 .wire-red .stripe { background: var(--red); }
-.num { font-family: var(--mono); font-weight: 600; font-size: 18px; }
-.wire-lg .num { font-size: 26px; }
-.sub { font-family: var(--mono); font-size: 10px; font-weight: 600; color: #6b5a1e; }
+/* Big and bold: small 1s and 2s were hard to tell apart. */
+.num { font-family: var(--mono); font-weight: 700; font-size: 25px; line-height: 1; }
+.wire-lg .num { font-size: 36px; }
+.sub { font-family: var(--mono); font-size: 11px; font-weight: 600; color: #6b5a1e; }
 .wire.cut .sub { color: #aeb7c2; }
 .slash { position: absolute; left: -10px; right: -10px; top: 50%; height: 2px; background: var(--text); transform: rotate(-58deg); }
-.marker-row { height: 20px; display: flex; align-items: center; }
-.marker { min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; font-family: var(--mono); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; background: #d5dce5; color: var(--ink); }
+.marker-row { height: 24px; display: flex; align-items: center; }
+.marker { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; font-family: var(--mono); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; background: #d5dce5; color: var(--ink); }
 .marker-yellow { background: var(--yellow); }
 .pos { font-family: var(--mono); font-size: 11px; color: var(--dim); }
 
@@ -233,17 +234,17 @@ button.wire.hidden:hover { border-color: #5a6676; }
   .rack-card { padding: 10px; }
   .rack-sm { gap: 3px; }
   .wire-slot-sm { width: calc((100% - 12 * 3px) / 13); min-width: 22px; }
-  .wire-sm { width: 100%; height: 38px; border-radius: 4px; }
-  .wire-sm .num { font-size: 11px; }
+  .wire-sm { width: 100%; height: 44px; border-radius: 4px; }
+  .wire-sm .num { font-size: 16px; }
   .wire-sm .stripe { height: 3px; }
-  .wire-slot-sm .marker { min-width: 15px; height: 15px; font-size: 10px; padding: 0 3px; }
-  .wire-slot-sm .marker-row { height: 15px; }
+  .wire-slot-sm .marker { min-width: 19px; height: 19px; font-size: 12px; padding: 0 3px; }
+  .wire-slot-sm .marker-row { height: 19px; }
   .pos { display: none; }
   .my-panel { padding: 10px; }
   .rack-lg { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; width: 100%; }
   .wire-slot-lg { width: auto; }
-  .wire-lg { width: 100%; height: 54px; border-radius: 6px; }
-  .wire-lg .num { font-size: 19px; }
+  .wire-lg { width: 100%; height: 62px; border-radius: 6px; }
+  .wire-lg .num { font-size: 28px; }
   .levels { grid-template-columns: 1fr; }
   .stats { gap: 6px; }
   .result { padding: 20px; }

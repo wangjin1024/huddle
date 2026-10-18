@@ -1,7 +1,7 @@
 # Bomb Busters Online — Product Requirements Document (MVP)
 
 Status: Draft · Owner: wangjin1024 · Last updated: 2026-10-17
-Rules reference: [`bomb_busters_game_guide.md`](../bomb_busters_game_guide.md)
+Rules reference: [`game_rules/bomb_busters_game_guide.md`](../game_rules/bomb_busters_game_guide.md)
 
 ## 1. Summary
 

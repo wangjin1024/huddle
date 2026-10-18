@@ -65,7 +65,7 @@ Engine conventions:
 
 ## Source of truth for game rules
 
-`bomb_busters_game_guide.md` (written in Chinese) is the rules reference. Any game-logic implementation must match it; when the guide is ambiguous, ask the user rather than inventing a rule. Rule points that drive the design:
+`game_rules/bomb_busters_game_guide.md` (written in Chinese) is the rules reference. Any game-logic implementation must match it; when the guide is ambiguous, ask the user rather than inventing a rule. Rule points that drive the design:
 
 - **Wires**: blue 1–12 (four of each, 48 total) are safe and must all be cut to win; red wires (💣) end the game immediately if cut. Medium and hard difficulty add 2 yellow wires (difficulty table in PRD §5.1): they have decimal values for sorting, are cut by declaring "yellow", and must be cut to win.
 - **Racks are always sorted ascending** left to right. Deduction depends on this, so rack order is a game invariant, not a display preference.
