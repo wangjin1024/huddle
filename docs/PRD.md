@@ -63,8 +63,9 @@ These are taken from the rules guide. Items marked **[OQ-n]** depend on open que
 ### 5.2 Setup
 1. Shuffle all 48 blue wires together with the yellow and red wires for the chosen difficulty (see §5.1), and deal them as evenly as possible.
 2. Each rack is automatically sorted in ascending order, left to right, by wire value (blue integers, yellow X.1, red X.5).
-3. Initial info reveal: all players at the same time choose one of their own **blue** wires and put a marker showing its value. The wire stays uncut. Play starts once everyone has chosen.
-4. Choose the first player at random. Play then goes clockwise (in join order).
+3. Special wires announced: everyone is shown the values of the red and yellow wires in this game (e.g. bombs 4.5 and 8.5, yellow 2.1 and 7.1), but not who holds them. The list stays visible all game.
+4. Initial info reveal: all players at the same time choose one of their own **blue** wires and put a marker showing its value. The wire stays uncut. Play starts once everyone has chosen.
+5. Choose the first player at random. Play then goes clockwise (in join order).
 
 ### 5.3 Turn: exactly one action
 **Dual cut**
@@ -104,8 +105,8 @@ The rules forbid stating values, counts or positions. MVP has **no in-game text 
 - FR7: Teammates' racks are shown face-down in sorted order, with revealed wires and markers visible.
 - FR8: Public panel: detonator (current / max), cut-wire tally per value (for example "5: 2/4 cut"), and the current player.
 - FR9: Action log: who did what, the result, and the detonator change.
-- FR10: On my turn: tap a teammate's wire → choose a value from **only the values I hold**. A solo-cut button shows only when it's legal, listing the qualifying values.
-- FR11: Before a dual cut, show a confirmation step ("Cut Player B's 3rd wire as 5?").
+- FR10: On my turn: tap a teammate's wire, then tap one of **my own** wires. My wire is highlighted red, its value is the guess, and it is the wire of mine that gets cut on a success. Red wires can't be selected. If the selected wire qualifies for a solo cut, a solo-cut button appears for it.
+- FR11: A red Confirm button names the cut ("Confirm: cut Player B's #3 as 5") and must be pressed to send it.
 - FR12: Show reveals, explosions and wins with clear animations or feedback.
 
 ### 6.3 Connection

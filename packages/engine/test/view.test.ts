@@ -69,6 +69,14 @@ describe('viewFor', () => {
     expect(viewFor(s, 'A').currentPlayer).toBe('A');
   });
 
+  it('announces the red and yellow values in play to everyone, without their owners', () => {
+    const s = playing({ A: [b(1), r(8), y(2)], B: [r(3), b(1), y(6)] });
+    for (const viewer of ['A', 'B']) {
+      expect(viewFor(s, viewer).inPlay).toEqual({ red: [3.5, 8.5], yellow: [2.1, 6.1] });
+    }
+    expect(viewFor(s, 'A').players[1]!.rack[0]).toEqual({ id: '1-0', cut: false });
+  });
+
   it('counts yellow wires in play', () => {
     const s = playing({ A: [b(1), y(2)], B: [b(1), y(8)] });
     expect(viewFor(s, 'A')).toMatchObject({ yellowCut: 0, yellowTotal: 2 });

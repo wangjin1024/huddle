@@ -8,13 +8,15 @@ interface WireProps {
   size: 'sm' | 'lg';
   label: string;
   selected?: boolean;
+  /** Your own wire chosen to cut with: highlighted red. */
+  armed?: boolean;
   /** Highlighted as something you can tap right now (setup reveal, own-wire choice). */
   pickable?: boolean;
   onPick?: () => void;
 }
 
 /** One wire tile. Face-up when its color is known to this viewer, striped face-down otherwise. */
-export function Wire({ wire, number, size, label, selected, pickable, onPick }: WireProps) {
+export function Wire({ wire, number, size, label, selected, armed, pickable, onPick }: WireProps) {
   const { t } = useI18n();
   const known = wire.color !== undefined;
   const cls = [
@@ -23,6 +25,7 @@ export function Wire({ wire, number, size, label, selected, pickable, onPick }: 
     known ? `face wire-${wire.color}` : 'hidden',
     wire.cut && 'cut',
     selected && 'selected',
+    armed && 'armed',
     pickable && 'pickable',
   ]
     .filter(Boolean)
@@ -51,7 +54,7 @@ export function Wire({ wire, number, size, label, selected, pickable, onPick }: 
   return (
     <div className={`wire-slot wire-slot-${size}`}>
       {onPick ? (
-        <button type="button" className={cls} aria-label={label} aria-pressed={selected} onClick={onPick}>
+        <button type="button" className={cls} aria-label={label} aria-pressed={selected || armed} onClick={onPick}>
           {face}
         </button>
       ) : (

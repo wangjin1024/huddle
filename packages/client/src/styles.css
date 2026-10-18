@@ -50,7 +50,7 @@ a { color: #8cc4ff; }
 .btn { min-height: 48px; padding: 0 18px; border-radius: 10px; border: 1px solid transparent; font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: transparent; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.primary { background: var(--blue); color: var(--blue-ink); }
-.btn.light { background: #f2f4f7; color: var(--bg); font-size: 16px; }
+.btn.danger { background: #c4363b; color: #fff; font-size: 16px; }
 .btn.outline { border-color: var(--blue); }
 .btn.link { color: var(--muted); min-height: 44px; text-decoration: underline; text-underline-offset: 3px; }
 .btn.big { min-height: 56px; font-size: 17px; font-weight: 700; border-radius: 12px; }
@@ -156,6 +156,9 @@ button.wire.hidden:hover { border-color: #5a6676; }
 .wire.selected { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); }
 .wire.pickable { box-shadow: 0 0 0 3px rgba(76, 141, 255, 0.6); }
 .wire.pickable.selected { box-shadow: 0 0 0 3px #fff; }
+/* Your own wire chosen to cut with. */
+.wire.armed { border-color: var(--red); box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.55); transform: translateY(-6px); }
+.wire { transition: transform 0.12s ease; }
 .stripe { position: absolute; left: 0; right: 0; top: 0; height: 5px; }
 .wire-lg .stripe { height: 7px; }
 .wire-blue .stripe { background: var(--blue); }
@@ -175,12 +178,16 @@ button.wire.hidden:hover { border-color: #5a6676; }
 .actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; padding-top: 14px; border-top: 1px solid #2a323d; }
 .action-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .action-col.grow { flex: 3 1 420px; }
-.action-col.solo { flex: 1 1 220px; padding-left: 16px; border-left: 1px solid #2a323d; }
-.guesses { display: flex; flex-wrap: wrap; gap: 8px; }
-.guess { min-width: 48px; height: 44px; padding: 0 12px; border-radius: 8px; font-family: var(--mono); font-size: 17px; font-weight: 600; cursor: pointer; background: var(--raised); border: 1px solid var(--line-2); }
-.guess-yellow { background: #2e2913; border-color: #6b5a1e; }
-.guess[aria-pressed='true'] { background: var(--blue); color: var(--blue-ink); border-color: var(--blue); }
 .confirm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.solo-note { color: #9cc1ff; }
+.in-play { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.in-play-label { font-size: 13px; color: var(--muted); }
+.in-play-label:not(:first-child) { margin-left: 8px; }
+.special { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+.special-red { background: #3a1d20; border: 1px solid #5b2a2e; color: #ffb4b6; }
+.special-yellow { background: #2e2913; border: 1px solid #6b5a1e; color: #f3d98a; }
+.reveal-banner { flex-direction: column; gap: 10px; }
+.reveal-specials .in-play { margin-top: 6px; }
 
 /* Sidebar */
 .tally { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -237,7 +244,6 @@ button.wire.hidden:hover { border-color: #5a6676; }
   .wire-slot-lg { width: auto; }
   .wire-lg { width: 100%; height: 54px; border-radius: 6px; }
   .wire-lg .num { font-size: 19px; }
-  .action-col.solo { padding-left: 0; border-left: 0; }
   .levels { grid-template-columns: 1fr; }
   .stats { gap: 6px; }
   .result { padding: 20px; }

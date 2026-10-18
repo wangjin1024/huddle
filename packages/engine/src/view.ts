@@ -33,6 +33,11 @@ export interface GameView {
   blueCut: Record<number, number>;
   yellowCut: number;
   yellowTotal: number;
+  /**
+   * Values of the red and yellow wires in this game, announced to everyone at
+   * setup (sorted). Who holds them stays hidden.
+   */
+  inPlay: { red: number[]; yellow: number[] };
   legal: LegalActions;
 }
 
@@ -46,13 +51,16 @@ export function viewFor(state: GameState, viewerId: string): GameView {
   for (let v = 1; v <= BLUE_VALUES; v++) blueCut[v] = 0;
   let yellowCut = 0;
   let yellowTotal = 0;
+  const inPlay: GameView['inPlay'] = { red: [], yellow: [] };
 
   const players = state.players.map((p) => {
     const own = p.id === viewerId;
     // Setup reveals are simultaneous, so others' choices stay hidden until all have chosen.
     const markersVisible = own || state.phase !== 'reveal';
     const rack = p.rack.map((w): WireView => {
+      if (w.color === 'red') inPlay.red.push(w.value);
       if (w.color === 'yellow') {
+        inPlay.yellow.push(w.value);
         yellowTotal += 1;
         if (w.cut) yellowCut += 1;
       } else if (w.color === 'blue' && w.cut) {
@@ -80,6 +88,7 @@ export function viewFor(state: GameState, viewerId: string): GameView {
     blueCut,
     yellowCut,
     yellowTotal,
+    inPlay: { red: inPlay.red.sort((a, b) => a - b), yellow: inPlay.yellow.sort((a, b) => a - b) },
     legal: legalActions(state, viewerId),
   };
   if (state.lossReason) view.lossReason = state.lossReason;

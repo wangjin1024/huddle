@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { DIFFICULTY, type GameView, type Guess, type PlayerView } from '@bomb-busters/engine';
+import { useEffect, useState } from 'react';
+import { DIFFICULTY, type GameView, type PlayerView } from '@bomb-busters/engine';
 import type { ClientAction, RoomView } from '@bomb-busters/server/protocol';
 import { useI18n } from '../i18n';
 import { api } from '../net';
@@ -27,25 +27,19 @@ export function Game({ room, onError, onLeave }: GameProps) {
   const current = room.players.find((p) => p.id === game.currentPlayer);
   const nextId = game.players[(game.players.findIndex((p) => p.id === game.currentPlayer) + 1) % game.players.length]!.id;
 
+  // A cut is chosen as: a teammate's wire (target) + one of your own wires (armed).
+  // The armed wire's value is the guess, and it is the wire of yours that gets cut.
   const [target, setTarget] = useState<string | null>(null);
-  const [guess, setGuess] = useState<Guess | null>(null);
-  const [ownWire, setOwnWire] = useState<string | null>(null);
+  const [armed, setArmed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showResult, setShowResult] = useState(true);
 
   // Every new event invalidates a half-made selection.
   useEffect(() => {
     setTarget(null);
-    setGuess(null);
-    setOwnWire(null);
+    setArmed(null);
   }, [room.log.length, game.phase]);
   useEffect(() => setShowResult(true), [game.phase]);
-
-  const candidates = useMemo(
-    () => (guess === null ? [] : me.rack.filter((w) => !w.cut && guessOfView(w) === guess)),
-    [guess, me.rack],
-  );
-  const needOwn = candidates.length > 1 && ownWire === null;
 
   async function send(action: ClientAction) {
     setBusy(true);
@@ -54,22 +48,22 @@ export function Game({ room, onError, onLeave }: GameProps) {
     if (!r.ok) onError(r.error);
   }
 
+  const armedWire = armed ? me.rack.find((w) => w.id === armed) : undefined;
+  const guess = armedWire ? guessOfView(armedWire) : null;
   const targetOwner = target ? game.players.find((p) => p.rack.some((w) => w.id === target)) : undefined;
   const targetNumber = targetOwner ? targetOwner.rack.findIndex((w) => w.id === target) + 1 : 0;
-  const canConfirm = myTurn && !busy && target !== null && guess !== null && !needOwn;
+  const canCut = myTurn && !busy && target !== null && guess !== null && game.legal.dualCut.includes(guess);
+  const canSolo = myTurn && !busy && guess !== null && game.legal.soloCut.includes(guess);
 
   const confirmCut = () => {
-    if (!canConfirm) return;
-    const action: ClientAction = { type: 'dualCut', targetWireId: target!, guess: guess! };
-    if (ownWire) action.ownWireId = ownWire;
-    void send(action);
+    if (canCut) void send({ type: 'dualCut', targetWireId: target!, guess: guess!, ownWireId: armed! });
   };
 
-  const confirmLabel =
+  const cutLabel =
     targetOwner && guess !== null
       ? t('confirmCut', { name: nameOf(room, targetOwner.id), n: targetNumber, v: guessText(t, guess) })
       : target
-        ? t('pickValue')
+        ? t('pickYours')
         : t('pickTarget');
 
   return (
@@ -92,16 +86,22 @@ export function Game({ room, onError, onLeave }: GameProps) {
       <div className="table">
         <main className="table-main">
           {game.phase === 'reveal' && (
-            <div className="banner" role="status">
-              <strong>{t('revealTitle')}</strong>
-              <span>
-                {me.revealDone
-                  ? t('revealWaiting', {
-                      done: game.players.filter((p) => p.revealDone).length,
-                      total: game.players.length,
-                    })
-                  : t('revealHint')}
-              </span>
+            <div className="banner reveal-banner" role="status">
+              <div className="reveal-specials">
+                <strong>{t('inPlayTitle')}</strong>
+                <InPlay game={game} />
+              </div>
+              <div>
+                <strong>{t('revealTitle')}</strong>{' '}
+                <span>
+                  {me.revealDone
+                    ? t('revealWaiting', {
+                        done: game.players.filter((p) => p.revealDone).length,
+                        total: game.players.length,
+                      })
+                    : t('revealHint')}
+                </span>
+              </div>
             </div>
           )}
           {game.phase === 'playing' && !myTurn && current && (
@@ -119,7 +119,7 @@ export function Game({ room, onError, onLeave }: GameProps) {
               isNext={p.id === nextId && game.phase === 'playing'}
               selectable={myTurn && game.legal.dualCut.length > 0}
               target={target}
-              onPick={(id) => setTarget(id)}
+              onPick={(id) => setTarget(id === target ? null : id)}
             />
           ))}
 
@@ -136,7 +136,8 @@ export function Game({ room, onError, onLeave }: GameProps) {
               <div className="rack rack-lg">
                 {me.rack.map((w, i) => {
                   const revealPick = game.phase === 'reveal' && !me.revealDone && w.color === 'blue';
-                  const ownPick = myTurn && candidates.length > 1 && candidates.includes(w);
+                  // Red wires can't be named, so they can't be armed.
+                  const armPick = myTurn && !game.legal.mustPass && !w.cut && w.color !== 'red';
                   return (
                     <Wire
                       key={w.id}
@@ -144,13 +145,13 @@ export function Game({ room, onError, onLeave }: GameProps) {
                       number={i + 1}
                       size="lg"
                       label={t('yourWireLabel', { n: i + 1 })}
-                      pickable={revealPick || ownPick}
-                      selected={ownWire === w.id}
+                      pickable={revealPick}
+                      armed={armed === w.id}
                       onPick={
                         revealPick
                           ? () => void send({ type: 'reveal', wireId: w.id })
-                          : ownPick
-                            ? () => setOwnWire(w.id)
+                          : armPick
+                            ? () => setArmed(armed === w.id ? null : w.id)
                             : undefined
                       }
                     />
@@ -169,50 +170,30 @@ export function Game({ room, onError, onLeave }: GameProps) {
                     </button>
                   </div>
                 ) : (
-                  <>
-                    <div className="action-col grow">
-                      <span className="muted small">{t('dualHint')}</span>
-                      <div className="guesses">
-                        {sortGuesses(game.legal.dualCut).map((g) => (
-                          <button
-                            key={String(g)}
-                            type="button"
-                            className={g === 'yellow' ? 'guess guess-yellow' : 'guess'}
-                            aria-pressed={guess === g}
-                            onClick={() => {
-                              setGuess(g);
-                              setOwnWire(null);
-                            }}
-                          >
-                            {guessText(t, g)}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="confirm-row">
-                        <button type="button" className="btn light" disabled={!canConfirm} onClick={confirmCut}>
-                          <ScissorsIcon />
-                          {needOwn && guess !== null ? t('pickOwn', { v: guessText(t, guess) }) : confirmLabel}
-                        </button>
-                        <span className="muted small">{t('warning')}</span>
-                      </div>
-                    </div>
-                    <div className="action-col solo">
-                      <span className="muted small">{t('soloHint')}</span>
-                      {game.legal.soloCut.length === 0 && <span className="dim small">{t('soloNone')}</span>}
-                      {sortGuesses(game.legal.soloCut).map((v) => (
+                  <div className="action-col grow">
+                    <span className="muted small">{t('cutHint')}</span>
+                    <div className="confirm-row">
+                      <button type="button" className="btn danger" disabled={!canCut} onClick={confirmCut}>
+                        <ScissorsIcon />
+                        {cutLabel}
+                      </button>
+                      {canSolo && (
                         <button
-                          key={String(v)}
                           type="button"
                           className="btn outline"
-                          disabled={busy}
-                          onClick={() => void send({ type: 'soloCut', value: v })}
+                          onClick={() => void send({ type: 'soloCut', value: guess! })}
                         >
-                          {v === 'yellow' ? t('soloCutYellow') : t('soloCut', { v })}
+                          {guess === 'yellow' ? t('soloCutYellow') : t('soloCut', { v: guess! })}
                         </button>
-                      ))}
-                      {game.legal.soloCut.length > 0 && <span className="dim small">{t('soloSafe')}</span>}
+                      )}
                     </div>
-                  </>
+                    <span className="muted small">{t('warning')}</span>
+                    {game.legal.soloCut.length > 0 && !canSolo && (
+                      <span className="small solo-note">
+                        {t('soloAvail', { list: sortGuesses(game.legal.soloCut).map((g) => guessText(t, g)).join(', ') })}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -220,6 +201,10 @@ export function Game({ room, onError, onLeave }: GameProps) {
         </main>
 
         <aside className="table-side">
+          <section className="card">
+            <h2>{t('inPlayTitle')}</h2>
+            <InPlay game={game} />
+          </section>
           <Tally game={game} />
           <section className="card log">
             <h2>{t('log')}</h2>
@@ -251,6 +236,32 @@ export function Game({ room, onError, onLeave }: GameProps) {
           onViewRacks={() => setShowResult(false)}
           onLeave={onLeave}
         />
+      )}
+    </div>
+  );
+}
+
+/** The red and yellow wire values announced at setup (owners stay hidden). */
+function InPlay({ game }: { game: GameView }) {
+  const { t } = useI18n();
+  return (
+    <div className="in-play">
+      <span className="in-play-label">{t('inPlayBombs')}</span>
+      {game.inPlay.red.map((v) => (
+        <span key={`r${v}`} className="special special-red">
+          <BombIcon size={14} color="var(--red)" strokeWidth={2.4} />
+          <span className="mono">{v.toFixed(1)}</span>
+        </span>
+      ))}
+      <span className="in-play-label">{t('yellow')}</span>
+      {game.inPlay.yellow.length === 0 ? (
+        <span className="muted small">{t('none')}</span>
+      ) : (
+        game.inPlay.yellow.map((v) => (
+          <span key={`y${v}`} className="special special-yellow">
+            <span className="mono">{v.toFixed(1)}</span>
+          </span>
+        ))
       )}
     </div>
   );
