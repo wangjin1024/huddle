@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { io as connect } from 'socket.io-client';
 import { SOCKET_PATH as BB_SOCKET } from '@bomb-busters/server/protocol';
 import { SOCKET_PATH as RG_SOCKET } from '@regicide/server/protocol';
-import { createHost, type HostOptions } from '../src/app.js';
+import { STATUS_PATH, createHost, type HostOptions } from '../src/app.js';
 
 const cleanups: (() => void)[] = [];
 afterEach(() => cleanups.splice(0).forEach((fn) => fn()));
@@ -63,5 +63,28 @@ describe('host', () => {
       const created = await socket.emitWithAck('room:create', { name: 'Lin' });
       expect(created).toMatchObject({ ok: true });
     }
+  });
+
+  it('reports games in progress per game, without room codes', async () => {
+    const url = await start();
+    const status = async () => (await fetch(url + STATUS_PATH)).json();
+    expect(await status()).toMatchObject({ ongoing: 0 });
+
+    const rg = connect(url, { path: RG_SOCKET, transports: ['websocket'], forceNew: true });
+    const bb = connect(url, { path: BB_SOCKET, transports: ['websocket'], forceNew: true });
+    cleanups.push(() => rg.close(), () => bb.close());
+    const room = await rg.emitWithAck('room:create', { name: 'Lin' });
+    await rg.emitWithAck('game:start');
+    await bb.emitWithAck('room:create', { name: 'Ben' });
+
+    const body = await status();
+    expect(body).toEqual({
+      ongoing: 1,
+      games: {
+        '/boom-buster': { lobbies: 1, playing: 0, finished: 0, players: 1, connected: 1 },
+        '/regicide': { lobbies: 0, playing: 1, finished: 0, players: 1, connected: 1 },
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain(room.ok ? room.code : '?');
   });
 });

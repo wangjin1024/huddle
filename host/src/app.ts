@@ -13,15 +13,68 @@ export interface HostOptions {
   clients?: Partial<Record<GamePath, string>>;
 }
 
+export const STATUS_PATH = '/api/status';
+
 export type GamePath = typeof BOMB_BUSTERS_PATH | typeof REGICIDE_PATH;
 export const GAME_PATHS: GamePath[] = [BOMB_BUSTERS_PATH, REGICIDE_PATH];
 
+/** What every game's rooms have in common, enough to tell lobbies from games in progress. */
+interface RoomLike {
+  game: { phase: string } | null;
+  members: { connected: boolean; left?: boolean }[];
+}
+
+export interface GameStatus {
+  /** Rooms waiting in the lobby. */
+  lobbies: number;
+  /** Games started and not yet won or lost. */
+  playing: number;
+  /** Games over, still showing the result screen. */
+  finished: number;
+  players: number;
+  connected: number;
+}
+
+export interface HostStatus {
+  /** Games in progress across all of Huddle; a restart would end them. */
+  ongoing: number;
+  games: Record<GamePath, GameStatus>;
+}
+
+function gameStatus(rooms: Map<string, RoomLike>): GameStatus {
+  const status: GameStatus = { lobbies: 0, playing: 0, finished: 0, players: 0, connected: 0 };
+  for (const room of rooms.values()) {
+    if (!room.game) status.lobbies++;
+    else if (room.game.phase === 'won' || room.game.phase === 'lost') status.finished++;
+    else status.playing++;
+    const members = room.members.filter((m) => !m.left);
+    status.players += members.length;
+    status.connected += members.filter((m) => m.connected).length;
+  }
+  return status;
+}
+
 /** One HTTP server for all of Huddle: the hub, each game's client, and each game's Socket.IO. */
 export function createHost({ hubFile, clients = {} }: HostOptions = {}) {
-  const http = createServer((req, res) => route(req.url ?? '/', res, hubFile, clients));
+  const http = createServer((req, res) => {
+    // Counts only, never room codes: this path is as public as the rest of the site.
+    if (req.url?.split('?')[0] === STATUS_PATH) {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      return res.end(JSON.stringify(status()));
+    }
+    route(req.url ?? '/', res, hubFile, clients);
+  });
   const bombBusters = attachBombBusters(http);
   const regicide = attachRegicide(http);
+  function status(): HostStatus {
+    const games = {
+      [BOMB_BUSTERS_PATH]: gameStatus(bombBusters.rooms.rooms),
+      [REGICIDE_PATH]: gameStatus(regicide.rooms.rooms),
+    } as Record<GamePath, GameStatus>;
+    return { ongoing: Object.values(games).reduce((n, g) => n + g.playing, 0), games };
+  }
   return {
+    status,
     http,
     bombBusters,
     regicide,

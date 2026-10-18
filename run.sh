@@ -13,7 +13,38 @@ cd "$(dirname "$0")"
 #   HOST  default 0.0.0.0 (reachable from other devices on your network);
 #         set HOST=127.0.0.1 when a reverse proxy (e.g. Caddy) sits in front.
 #
-# Rooms live in memory: restarting the server ends any game in progress.
+# Rooms live in memory: restarting the server ends any game in progress. So
+# this first asks the running server (npm run status) and, if games are in
+# progress, shows them and asks before going on. ./run.sh --yes skips the
+# question (needed when there's no terminal to answer it, e.g. in CI).
+
+FORCE=0
+for arg in "$@"; do
+	case "$arg" in -y|--yes|--force) FORCE=1 ;; esac
+done
+
+# Without tsx (first install) there's nothing of ours running to check.
+if [ "$FORCE" = 0 ] && [ -x ./node_modules/.bin/tsx ]; then
+	set +e
+	STATUS_OUT=$(npm run -s status 2>&1)
+	STATUS=$?
+	set -e
+	# Exit 1 = games in progress; 0 = none; 2 = server not running. Both of the latter go ahead.
+	if [ "$STATUS" = 1 ] && grep -q "in progress" <<<"$STATUS_OUT"; then
+		echo "$STATUS_OUT"
+		echo ""
+		if [ -t 0 ]; then
+			read -r -p "Restart anyway and end these games? [y/N] " ANSWER || ANSWER=""
+			case "$ANSWER" in
+				y|Y|yes|YES) echo "Restarting." ;;
+				*) echo "Not restarting."; exit 1 ;;
+			esac
+		else
+			echo "Not restarting: no terminal to confirm. Run ./run.sh --yes to restart anyway."
+			exit 1
+		fi
+	fi
+fi
 
 npm install
 npm run build   # Vite build of each games/<game>/client → its dist/
