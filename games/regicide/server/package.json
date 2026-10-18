@@ -1,0 +1,14 @@
+{
+  "name": "@regicide/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/server.ts",
+    "./protocol": "./src/protocol.ts"
+  },
+  "dependencies": {
+    "@regicide/engine": "*",
+    "socket.io": "^4.8.1"
+  }
+}

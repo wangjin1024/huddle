@@ -4,29 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. Its first and so far only game is an online, browser-based multiplayer version of the cooperative deduction board game **Bomb Busters (炸弹克星)**. The `packages/*` workspaces (`@bomb-busters/*`) are that game. If a second game is added, give each game its own folder. The stack (PRD §11) is TypeScript everywhere, in npm workspaces: `packages/engine` (pure rules), `packages/server` (Node + Socket.IO), and `packages/client` (React + Vite). In production it deploys as one Node service.
+This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. It hosts two online, browser-based multiplayer games:
+
+- **Bomb Busters (炸弹克星)**, a cooperative deduction board game: `games/bomb-busters/*` (`@bomb-busters/*`).
+- **Regicide (弑君者)**, a cooperative card game played with a standard deck: `games/regicide/*` (`@regicide/*`).
+
+Each game has its own folder with the same three npm workspaces: `engine` (pure rules), `server` (Node + Socket.IO) and `client` (React + Vite), all TypeScript. A new game gets its own `games/<name>/` folder in the same shape. `host/` (`@huddle/host`) is the one Node service that runs them all in production.
 
 ## Commands
 
 Run from the repo root:
 
-- `npm run dev`: server (tsx watch, :3001) and Vite (:5173) together. Vite forwards `/boom-buster/socket.io` to the server. Open http://localhost:5173/boom-buster/.
+- `npm run dev`: the host (tsx watch, :3001) plus each game's Vite: Bomb Busters on :5173, Regicide on :5174. Each Vite forwards its game's socket path to the host. Open http://localhost:5173/boom-buster/ or http://localhost:5174/regicide/.
 - `npm run build && npm start`, or `./run.sh` (adds `npm install` and PM2 via `ecosystem.config.cjs`): production on `$HOST:$PORT` (default `0.0.0.0:3001`; read from `.env`).
-- `npm test`: all tests (Vitest), engine + server
-- `npx vitest run packages/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
-- `npm run typecheck`: `tsc --noEmit` for all three packages
+- `npm test`: all tests (Vitest): every game's engine and server, plus the host
+- `npx vitest run games/bomb-busters/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
+- `npm run typecheck`: `tsc --noEmit` for the host and every game package
 
-No package has a build step for its TypeScript. Workspace packages import each other's `.ts` source directly: tsx runs the server, and Vite bundles the client.
+No package has a build step for its TypeScript. Workspace packages import each other's `.ts` source directly: tsx runs the host (and through it each game server), and Vite bundles each client.
 
 ## URLs and hosting
 
 Production is `huddle.kinddot.net`, with Caddy reverse-proxying everything to this one Node process:
 - `/`: `hub/index.html`, the static "Huddle" game picker (one card per game). Not part of the React build. Its EN/中文 text swaps via `data-i18n` keys and a small inline script. The language choice is saved under `huddle:lang`, the same key the game's `i18n.tsx` uses, so it carries over between them.
-- `/boom-buster/`: the game. Rooms are at `/boom-buster/r/CODE`, and the socket is at `/boom-buster/socket.io`.
+- `/boom-buster/`: Bomb Busters. Rooms are at `/boom-buster/r/CODE`, and the socket is at `/boom-buster/socket.io`.
+- `/regicide/`: Regicide, laid out the same way (`/regicide/r/CODE`, `/regicide/socket.io`).
 
-The base path is defined twice and both must match: `BASE_PATH` in `packages/server/src/protocol.ts`, and `base` in `packages/client/vite.config.ts`. Client code builds URLs from `src/paths.ts` (which uses `import.meta.env.BASE_URL`); never hard-code `/r/...`.
+`host/src/app.ts` owns the one HTTP server: it serves the hub and each game's `client/dist` under the game's base path, and calls each game server's `attach(http)` to add its Socket.IO (with `destroyUpgrade: false`, so the games don't drop each other's websocket upgrades). Adding a game means adding it to `GAME_PATHS` and `createHost` there, to `host/src/main.ts`, and to the root `dev`/`build` scripts.
 
-## Engine architecture (`packages/engine`)
+Each game's base path is defined twice and both must match: `BASE_PATH` in `games/<game>/server/src/protocol.ts`, and `base` in `games/<game>/client/vite.config.ts`. Client code builds URLs from `src/paths.ts` (which uses `import.meta.env.BASE_URL`); never hard-code `/r/...`.
+
+The sections below describe Bomb Busters; Regicide follows the same structure and conventions (see its own section after them).
+
+## Engine architecture (`games/bomb-busters/engine`)
 
 Pure, no I/O. Packages import it straight from TypeScript source (`exports: ./src/index.ts`, no build step).
 
@@ -42,16 +52,16 @@ Engine conventions:
 - A dual cut includes `ownWireId` up front. It's required only when the player holds more than one matching wire.
 - Test helpers live in `test/helpers.ts`. `playing({...hands})` gives a game that is already past the setup reveal.
 
-## Server (`packages/server`)
+## Server (`games/bomb-busters/server`)
 
 - `protocol.ts`: the socket event types and `RoomView`, shared with the client. The client imports it **as types only**, plus constants. Keep it free of Node imports.
 - `rooms.ts`: `RoomManager` holds the in-memory rooms and the join/leave/start rules, with no sockets. `toAction` copies only known fields from client input before anything reaches the engine.
-- `server.ts`: Socket.IO wiring. After every change it calls `broadcast(code)`, which sends each socket its **own** `RoomView`. Never `io.to(room).emit` game state.
+- `server.ts`: Socket.IO wiring (`attach(http)`). After every change it calls `broadcast(code)`, which sends each socket its **own** `RoomView`. Never `io.to(room).emit` game state.
 - Identity: each seat has a secret `token`, returned only in the join/create reply, never in broadcasts. Rejoining with it restores the seat, so a refresh or reconnect keeps your place. A disconnected player pauses the game; nobody can skip their turn.
 - The action log is broadcast to everyone, so it holds only public events (`PublicEvent`). Setup reveals are logged without their value.
 - `test/socket.test.ts` runs a real server and checks that no raw payload leaks hidden wires or tokens.
 
-## Client (`packages/client`)
+## Client (`games/bomb-busters/client`)
 
 - `net.ts`: a single socket plus a typed `api` built on `emitWithAck`. `useRoom()` holds the latest `RoomView`. After any reconnect it re-joins with the stored token.
 - `i18n.tsx`: EN/中文 dictionaries. `zh` is typed `Record<MessageKey, string>`, so a missing translation is a type error. All UI text goes through `t()`.
@@ -59,11 +69,23 @@ Engine conventions:
 - Legal moves come from `view.game.legal`, which the server computes. The client doesn't re-implement rules.
 - Visual design reference: the "Bomb Busters UI" canvas artifact. Colours live as CSS variables in `styles.css`.
 
+## Regicide (`games/regicide/*`)
+
+Product and rules decisions: `docs/regicide/PRD.md`. Rules reference: `game_rules/regicide_rules.md` (Chinese). The guide is unclear in places; PRD §9 records how each point was decided (e.g. enemy cards in hand are worth 10/15/20, the Jester cancels immunity for the rest of that fight, its player picks who goes next, powers resolve ♥ ♦ ♠ ♣). Check §9 before resolving a rule question, and ask the user about anything it doesn't cover.
+
+- Engine: `cards.ts` (card ids, values, sorting), `setup.ts` (`createGame`, `createGameFromHands`, `PLAYER_SETUP` by player count), `rules.ts` (`playKind`, `previewPlay`, enemy health/attack), `actions.ts` (`applyAction(state, action, rng)`; the rng shuffles the discard pile for ♥), `view.ts` (`viewFor`).
+- Card ids are the cards themselves (`H7`, `SA`, `CK`, Jesters `X1`/`X2`). That's safe because hidden cards are never sent: `viewFor` turns other hands into `handCount` and the tavern deck into `tavernCount`. Keep it that way.
+- `previewPlay` is the single source of play resolution: the engine applies it, and the client shows it as the damage preview before a play.
+- Phases: `play` → `discard` (enemy survived and attacks) or `chooseNext` (after a Jester) → next turn. `view.legal` says what the viewer may do now.
+- Every engine event except `turnStarted` is public, so the room log stores them as-is. Diamonds draws log counts per player, never the cards.
+- Test helpers: `games/regicide/engine/test/helpers.ts` (`game({...hands}, { tavern, castle, discard })`, `play`, `discard`, `act`).
+- Visual design reference: the "Regicide UI" canvas artifact (https://claude.ai/artifact/294Kd5UyiU1TzjcLvsc3nn).
+
 ## Product scope
 
-`docs/PRD.md` defines the MVP: online real-time rooms for a private group (no accounts, join by link), base rules only. The campaign, equipment and bots come later. Its §9 records how each rule the guide leaves unclear was decided. Some decisions deliberately differ from the guide, so check §9 before resolving a rule question yourself.
+`docs/bomb-busters/PRD.md` defines the Bomb Busters MVP: online real-time rooms for a private group (no accounts, join by link), base rules only. The campaign, equipment and bots come later. Its §9 records how each rule the guide leaves unclear was decided. Some decisions deliberately differ from the guide, so check §9 before resolving a rule question yourself.
 
-## Source of truth for game rules
+## Source of truth for game rules (Bomb Busters)
 
 `game_rules/bomb_busters_game_guide.md` (written in Chinese) is the rules reference. Any game-logic implementation must match it; when the guide is ambiguous, ask the user rather than inventing a rule. Rule points that drive the design:
 

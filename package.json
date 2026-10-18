@@ -3,15 +3,16 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "games/*/*",
+    "host"
   ],
   "scripts": {
-    "dev": "concurrently -k -n server,client -c blue,green \"npm run dev -w @bomb-busters/server\" \"npm run dev -w @bomb-busters/client\"",
-    "build": "npm run build -w @bomb-busters/client",
-    "start": "npm start -w @bomb-busters/server",
+    "dev": "concurrently -k -n host,bomb-busters,regicide -c blue,green,yellow \"npm run dev -w @huddle/host\" \"npm run dev -w @bomb-busters/client\" \"npm run dev -w @regicide/client\"",
+    "build": "npm run build -w @bomb-busters/client -w @regicide/client",
+    "start": "npm start -w @huddle/host",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p packages/engine --noEmit && tsc -p packages/server --noEmit && tsc -p packages/client --noEmit"
+    "typecheck": "tsc -p host --noEmit && for g in games/*/*; do tsc -p $g --noEmit || exit 1; done"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

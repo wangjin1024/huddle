@@ -1,0 +1,14 @@
+{
+  "name": "@huddle/host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@bomb-busters/server": "*",
+    "@regicide/server": "*"
+  }
+}

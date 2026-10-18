@@ -20,7 +20,7 @@ module.exports = {
 	apps: [
 		{
 			name:         'huddle',
-			script:       'packages/server/src/main.ts',
+			script:       'host/src/main.ts',
 			interpreter:  'node',
 			interpreter_args: '--import tsx', // run the TypeScript server directly, as `npm start` does
 			cwd:          __dirname,
