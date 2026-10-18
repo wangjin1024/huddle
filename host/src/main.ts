@@ -9,6 +9,7 @@ const builds: Record<GamePath, string> = {
   '/boom-buster': path('../../games/bomb-busters/client/dist'),
   '/regicide': path('../../games/regicide/client/dist'),
   '/codenames': path('../../games/codenames/client/dist'),
+  '/hanabi': path('../../games/hanabi/client/dist'),
 };
 const clients = Object.fromEntries(Object.entries(builds).filter(([, dir]) => existsSync(dir)));
 

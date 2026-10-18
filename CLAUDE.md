@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. It hosts three online, browser-based multiplayer games:
+This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. It hosts four online, browser-based multiplayer games:
 
 - **Bomb Busters (炸弹克星)**, a cooperative deduction board game: `games/bomb-busters/*` (`@bomb-busters/*`).
 - **Regicide (弑君者)**, a cooperative card game played with a standard deck: `games/regicide/*` (`@regicide/*`).
 - **Codenames (代号)**, the cooperative (one team vs. the board) mode of the word game: `games/codenames/*` (`@codenames/*`).
+- **Hanabi (花火)**, a cooperative card game where you see every hand but your own: `games/hanabi/*` (`@hanabi/*`).
 
 Each game has its own folder with the same three npm workspaces: `engine` (pure rules), `server` (Node + Socket.IO) and `client` (React + Vite), all TypeScript. A new game gets its own `games/<name>/` folder in the same shape. `host/` (`@huddle/host`) is the one Node service that runs them all in production.
 
@@ -16,7 +17,7 @@ Each game has its own folder with the same three npm workspaces: `engine` (pure 
 
 Run from the repo root:
 
-- `npm run dev`: the host (tsx watch, :3001) plus each game's Vite: Bomb Busters on :5173, Regicide on :5174, Codenames on :5175. Each Vite forwards its game's socket path to the host. Open http://localhost:5173/boom-buster/, http://localhost:5174/regicide/ or http://localhost:5175/codenames/.
+- `npm run dev`: the host (tsx watch, :3001) plus each game's Vite: Bomb Busters on :5173, Regicide on :5174, Codenames on :5175, Hanabi on :5176. Each Vite forwards its game's socket path to the host. Open http://localhost:5173/boom-buster/, http://localhost:5174/regicide/, http://localhost:5175/codenames/ or http://localhost:5176/hanabi/.
 - `npm run build && npm start`, or `./run.sh` (adds `npm install` and PM2 via `ecosystem.config.cjs`): production on `$HOST:$PORT` (default `0.0.0.0:3001`; read from `.env`).
 - `npm test`: all tests (Vitest): every game's engine and server, plus the host
 - `npx vitest run games/bomb-busters/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
@@ -31,12 +32,13 @@ Production is `huddle.kinddot.net`, with Caddy reverse-proxying everything to th
 - `/boom-buster/`: Bomb Busters. Rooms are at `/boom-buster/r/CODE`, and the socket is at `/boom-buster/socket.io`.
 - `/regicide/`: Regicide, laid out the same way (`/regicide/r/CODE`, `/regicide/socket.io`).
 - `/codenames/`: Codenames, the same again (`/codenames/r/CODE`, `/codenames/socket.io`).
+- `/hanabi/`: Hanabi (`/hanabi/r/CODE`, `/hanabi/socket.io`).
 
 `host/src/app.ts` owns the one HTTP server: it serves the hub and each game's `client/dist` under the game's base path, and calls each game server's `attach(http)` to add its Socket.IO (with `destroyUpgrade: false`, so the games don't drop each other's websocket upgrades). Adding a game means adding it to `GAME_PATHS` and `createHost` there, to `host/src/main.ts`, and to the root `dev`/`build` scripts.
 
 Each game's base path is defined twice and both must match: `BASE_PATH` in `games/<game>/server/src/protocol.ts`, and `base` in `games/<game>/client/vite.config.ts`. Client code builds URLs from `src/paths.ts` (which uses `import.meta.env.BASE_URL`); never hard-code `/r/...`.
 
-The sections below describe Bomb Busters; Regicide and Codenames follow the same structure and conventions (see their own sections after them).
+The sections below describe Bomb Busters; Regicide, Codenames and Hanabi follow the same structure and conventions (see their own sections after them).
 
 ## Engine architecture (`games/bomb-busters/engine`)
 
@@ -93,6 +95,18 @@ Product and rules decisions: `docs/codenames/PRD.md` (§9 records each decision)
 - Room-level features live in `server/src/rooms.ts`, not the engine: the Spymaster choice, board language, player-added words (Chinese rooms, ≤3 each, always on the board, hidden from non-hosts until the deal, cleared each game), and the chat. The chat keeps only the current round, and at most its last 10 lines (`CHAT_KEEP`): it is emptied on `turnEnded`, on start and on Play again. The Spymaster can't post while a game is live.
 - Test helpers: `games/codenames/engine/test/helpers.ts` (`game()`, `clue`, `pick`, `confirm`, `agree`).
 - Visual design reference: the "Codenames UI" canvas artifact (https://claude.ai/artifact/Ku53c53xAUGTmoJku26gYV).
+
+## Hanabi (`games/hanabi/*`)
+
+Product and rules decisions: `docs/hanabi/PRD.md` (§9 records each decision). Rules reference: `game_rules/hanabi.md` (Chinese).
+
+- Engine: `cards.ts` (colours, numbers, copies, the 50-card deck, `parseFace`), `setup.ts` (`createGame`, `createGameFromDeck`, `HAND_SIZE`), `rules.ts` (`touches`, `canPlay`, `score`, `maxScore`, `hintOptions`, `applyHint`), `actions.ts` (`applyAction(state, action)`: `hint`, `play`, `discard`), `view.ts` (`viewFor`).
+- Hidden information is your **own** hand. `viewFor` sends the viewer's own cards as `{ id, drawnAt, knowledge }` only (faces once the game is over), other hands in full, and the deck as a count. Card ids are draw order (`c0`–`c49`), which is public. Keep it that way.
+- Hands are leftmost (newest) first; a drawn card goes in slot 0 and cards never move otherwise. Each card's `knowledge` (known colour/number plus ruled-out ones) is updated by the engine on every hint and is public.
+- A hint names exactly one colour or one number and must name at least one card. Three misplays score 0. When a turn draws the last card, `turnsLeft` = player count; the game ends after those turns (`endReason`: `boom`, `perfect`, `deck`). The phase is `play` or `over`.
+- Every engine event is public, so the room log stores them as-is, with the turn they happened on. There is no chat.
+- Test helpers: `games/hanabi/engine/test/helpers.ts` (`game({...hands}, deck)` deals each hand left to right, `play`/`discard` by slot, `hintColour`, `hintNumber`).
+- Visual design reference: the "Hanabi UI" canvas artifact (https://claude.ai/artifact/GPViGf7gknoMjHK1QibWyF).
 
 ## Product scope
 

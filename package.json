@@ -7,8 +7,8 @@
     "host"
   ],
   "scripts": {
-    "dev": "concurrently -k -n host,bomb-busters,regicide,codenames -c blue,green,yellow,magenta \"npm run dev -w @huddle/host\" \"npm run dev -w @bomb-busters/client\" \"npm run dev -w @regicide/client\" \"npm run dev -w @codenames/client\"",
-    "build": "npm run build -w @bomb-busters/client -w @regicide/client -w @codenames/client",
+    "dev": "concurrently -k -n host,bomb-busters,regicide,codenames,hanabi -c blue,green,yellow,magenta,cyan \"npm run dev -w @huddle/host\" \"npm run dev -w @bomb-busters/client\" \"npm run dev -w @regicide/client\" \"npm run dev -w @codenames/client\" \"npm run dev -w @hanabi/client\"",
+    "build": "npm run build -w @bomb-busters/client -w @regicide/client -w @codenames/client -w @hanabi/client",
     "start": "npm start -w @huddle/host",
     "status": "tsx host/src/status.ts",
     "test": "vitest run",

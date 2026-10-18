@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 # ── Production start ────────────────────────────────────────────────────────
 # Huddle (huddle.kinddot.net): one Node + Socket.IO process (host/) serves the
 # game picker at / (hub/index.html), Bomb Busters at /boom-buster/, Regicide
-# at /regicide/ and Codenames at /codenames/ (each game's built client in games/<game>/client/dist plus its
+# at /regicide/, Codenames at /codenames/ and Hanabi at /hanabi/ (each game's built client in games/<game>/client/dist plus its
 # game socket), all on one port.
 #
 # Settings come from .env (optional):
@@ -74,7 +74,7 @@ $PM2 save 2>/dev/null || true
 set -a; [ -f .env ] && . ./.env; set +a
 echo ""
 echo "✅ Huddle running (production build) on ${HOST:-0.0.0.0}:${PORT:-3001}."
-echo "   Local URL:  http://localhost:${PORT:-3001}  (Bomb Busters: /boom-buster/, Regicide: /regicide/)"
+echo "   Local URL:  http://localhost:${PORT:-3001}  (Bomb Busters: /boom-buster/, Regicide: /regicide/, Codenames: /codenames/, Hanabi: /hanabi/)"
 echo ""
 echo "Useful commands:"
 echo "  $PM2 status               — show running status"

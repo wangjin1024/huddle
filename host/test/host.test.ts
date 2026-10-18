@@ -8,6 +8,7 @@ import { io as connect } from 'socket.io-client';
 import { SOCKET_PATH as BB_SOCKET } from '@bomb-busters/server/protocol';
 import { SOCKET_PATH as RG_SOCKET } from '@regicide/server/protocol';
 import { SOCKET_PATH as CN_SOCKET } from '@codenames/server/protocol';
+import { SOCKET_PATH as HN_SOCKET } from '@hanabi/server/protocol';
 import { STATUS_PATH, createHost, type HostOptions } from '../src/app.js';
 
 const cleanups: (() => void)[] = [];
@@ -31,11 +32,11 @@ describe('host', () => {
   it('serves the hub at / and each game under its own path', async () => {
     const hubFile = join(dist(''), 'hub.html');
     writeFileSync(hubFile, '<p>hub</p>');
-    const url = await start({ hubFile, clients: { '/boom-buster': dist('<p>bb</p>'), '/regicide': dist('<p>rg</p>'), '/codenames': dist('<p>cn</p>') } });
+    const url = await start({ hubFile, clients: { '/boom-buster': dist('<p>bb</p>'), '/regicide': dist('<p>rg</p>'), '/codenames': dist('<p>cn</p>'), '/hanabi': dist('<p>hn</p>') } });
     const get = (path: string) => fetch(url + path, { redirect: 'manual' });
 
     expect(await (await get('/')).text()).toBe('<p>hub</p>');
-    for (const [base, body] of [['/boom-buster', '<p>bb</p>'], ['/regicide', '<p>rg</p>'], ['/codenames', '<p>cn</p>']] as const) {
+    for (const [base, body] of [['/boom-buster', '<p>bb</p>'], ['/regicide', '<p>rg</p>'], ['/codenames', '<p>cn</p>'], ['/hanabi', '<p>hn</p>']] as const) {
       const bare = await get(base);
       expect(bare.status).toBe(301);
       expect(bare.headers.get('location')).toBe(`${base}/`);
@@ -58,7 +59,7 @@ describe('host', () => {
 
   it('runs every game’s socket side by side', async () => {
     const url = await start();
-    for (const path of [BB_SOCKET, RG_SOCKET, CN_SOCKET]) {
+    for (const path of [BB_SOCKET, RG_SOCKET, CN_SOCKET, HN_SOCKET]) {
       const socket = connect(url, { path, transports: ['websocket'], forceNew: true });
       cleanups.push(() => socket.close());
       const created = await socket.emitWithAck('room:create', { name: 'Lin' });
@@ -85,6 +86,7 @@ describe('host', () => {
         '/boom-buster': { lobbies: 1, playing: 0, finished: 0, players: 1, connected: 1 },
         '/regicide': { lobbies: 0, playing: 1, finished: 0, players: 1, connected: 1 },
         '/codenames': { lobbies: 0, playing: 0, finished: 0, players: 0, connected: 0 },
+        '/hanabi': { lobbies: 0, playing: 0, finished: 0, players: 0, connected: 0 },
       },
     });
     expect(JSON.stringify(body)).not.toContain(room.ok ? room.code : '?');

@@ -7,6 +7,8 @@ import { attach as attachRegicide } from '@regicide/server';
 import { BASE_PATH as REGICIDE_PATH } from '@regicide/server/protocol';
 import { attach as attachCodenames } from '@codenames/server';
 import { BASE_PATH as CODENAMES_PATH } from '@codenames/server/protocol';
+import { attach as attachHanabi } from '@hanabi/server';
+import { BASE_PATH as HANABI_PATH } from '@hanabi/server/protocol';
 
 export interface HostOptions {
   /** The game-picker page served at `/` (hub/index.html). */
@@ -17,8 +19,8 @@ export interface HostOptions {
 
 export const STATUS_PATH = '/api/status';
 
-export type GamePath = typeof BOMB_BUSTERS_PATH | typeof REGICIDE_PATH | typeof CODENAMES_PATH;
-export const GAME_PATHS: GamePath[] = [BOMB_BUSTERS_PATH, REGICIDE_PATH, CODENAMES_PATH];
+export type GamePath = typeof BOMB_BUSTERS_PATH | typeof REGICIDE_PATH | typeof CODENAMES_PATH | typeof HANABI_PATH;
+export const GAME_PATHS: GamePath[] = [BOMB_BUSTERS_PATH, REGICIDE_PATH, CODENAMES_PATH, HANABI_PATH];
 
 /** What every game's rooms have in common, enough to tell lobbies from games in progress. */
 interface RoomLike {
@@ -31,7 +33,7 @@ export interface GameStatus {
   lobbies: number;
   /** Games started and not yet won or lost. */
   playing: number;
-  /** Games over, still showing the result screen. */
+  /** Games over (won, lost, or Hanabi's `over`), still showing the result screen. */
   finished: number;
   players: number;
   connected: number;
@@ -43,11 +45,13 @@ export interface HostStatus {
   games: Record<GamePath, GameStatus>;
 }
 
+const FINISHED = new Set(['won', 'lost', 'over']);
+
 function gameStatus(rooms: Map<string, RoomLike>): GameStatus {
   const status: GameStatus = { lobbies: 0, playing: 0, finished: 0, players: 0, connected: 0 };
   for (const room of rooms.values()) {
     if (!room.game) status.lobbies++;
-    else if (room.game.phase === 'won' || room.game.phase === 'lost') status.finished++;
+    else if (FINISHED.has(room.game.phase)) status.finished++;
     else status.playing++;
     const members = room.members.filter((m) => !m.left);
     status.players += members.length;
@@ -69,11 +73,13 @@ export function createHost({ hubFile, clients = {} }: HostOptions = {}) {
   const bombBusters = attachBombBusters(http);
   const regicide = attachRegicide(http);
   const codenames = attachCodenames(http);
+  const hanabi = attachHanabi(http);
   function status(): HostStatus {
     const games = {
       [BOMB_BUSTERS_PATH]: gameStatus(bombBusters.rooms.rooms),
       [REGICIDE_PATH]: gameStatus(regicide.rooms.rooms),
       [CODENAMES_PATH]: gameStatus(codenames.rooms.rooms),
+      [HANABI_PATH]: gameStatus(hanabi.rooms.rooms),
     } as Record<GamePath, GameStatus>;
     return { ongoing: Object.values(games).reduce((n, g) => n + g.playing, 0), games };
   }
@@ -83,10 +89,12 @@ export function createHost({ hubFile, clients = {} }: HostOptions = {}) {
     bombBusters,
     regicide,
     codenames,
+    hanabi,
     close() {
       bombBusters.io.close();
       regicide.io.close();
       codenames.io.close();
+      hanabi.io.close();
     },
   };
 }

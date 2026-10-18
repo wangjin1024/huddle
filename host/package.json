@@ -10,6 +10,7 @@
   "dependencies": {
     "@bomb-busters/server": "*",
     "@regicide/server": "*",
-    "@codenames/server": "*"
+    "@codenames/server": "*",
+    "@hanabi/server": "*"
   }
 }
