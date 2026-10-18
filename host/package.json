@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@bomb-busters/server": "*",
-    "@regicide/server": "*"
+    "@regicide/server": "*",
+    "@codenames/server": "*"
   }
 }

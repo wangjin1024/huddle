@@ -5,6 +5,8 @@ import { attach as attachBombBusters } from '@bomb-busters/server';
 import { BASE_PATH as BOMB_BUSTERS_PATH } from '@bomb-busters/server/protocol';
 import { attach as attachRegicide } from '@regicide/server';
 import { BASE_PATH as REGICIDE_PATH } from '@regicide/server/protocol';
+import { attach as attachCodenames } from '@codenames/server';
+import { BASE_PATH as CODENAMES_PATH } from '@codenames/server/protocol';
 
 export interface HostOptions {
   /** The game-picker page served at `/` (hub/index.html). */
@@ -15,8 +17,8 @@ export interface HostOptions {
 
 export const STATUS_PATH = '/api/status';
 
-export type GamePath = typeof BOMB_BUSTERS_PATH | typeof REGICIDE_PATH;
-export const GAME_PATHS: GamePath[] = [BOMB_BUSTERS_PATH, REGICIDE_PATH];
+export type GamePath = typeof BOMB_BUSTERS_PATH | typeof REGICIDE_PATH | typeof CODENAMES_PATH;
+export const GAME_PATHS: GamePath[] = [BOMB_BUSTERS_PATH, REGICIDE_PATH, CODENAMES_PATH];
 
 /** What every game's rooms have in common, enough to tell lobbies from games in progress. */
 interface RoomLike {
@@ -66,10 +68,12 @@ export function createHost({ hubFile, clients = {} }: HostOptions = {}) {
   });
   const bombBusters = attachBombBusters(http);
   const regicide = attachRegicide(http);
+  const codenames = attachCodenames(http);
   function status(): HostStatus {
     const games = {
       [BOMB_BUSTERS_PATH]: gameStatus(bombBusters.rooms.rooms),
       [REGICIDE_PATH]: gameStatus(regicide.rooms.rooms),
+      [CODENAMES_PATH]: gameStatus(codenames.rooms.rooms),
     } as Record<GamePath, GameStatus>;
     return { ongoing: Object.values(games).reduce((n, g) => n + g.playing, 0), games };
   }
@@ -78,9 +82,11 @@ export function createHost({ hubFile, clients = {} }: HostOptions = {}) {
     http,
     bombBusters,
     regicide,
+    codenames,
     close() {
       bombBusters.io.close();
       regicide.io.close();
+      codenames.io.close();
     },
   };
 }

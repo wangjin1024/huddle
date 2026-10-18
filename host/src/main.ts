@@ -8,6 +8,7 @@ const path = (rel: string) => fileURLToPath(new URL(rel, import.meta.url));
 const builds: Record<GamePath, string> = {
   '/boom-buster': path('../../games/bomb-busters/client/dist'),
   '/regicide': path('../../games/regicide/client/dist'),
+  '/codenames': path('../../games/codenames/client/dist'),
 };
 const clients = Object.fromEntries(Object.entries(builds).filter(([, dir]) => existsSync(dir)));
 

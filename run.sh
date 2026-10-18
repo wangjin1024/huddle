@@ -4,8 +4,8 @@ cd "$(dirname "$0")"
 
 # ── Production start ────────────────────────────────────────────────────────
 # Huddle (huddle.kinddot.net): one Node + Socket.IO process (host/) serves the
-# game picker at / (hub/index.html), Bomb Busters at /boom-buster/ and Regicide
-# at /regicide/ (each game's built client in games/<game>/client/dist plus its
+# game picker at / (hub/index.html), Bomb Busters at /boom-buster/, Regicide
+# at /regicide/ and Codenames at /codenames/ (each game's built client in games/<game>/client/dist plus its
 # game socket), all on one port.
 #
 # Settings come from .env (optional):

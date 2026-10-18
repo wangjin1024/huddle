@@ -1,0 +1,14 @@
+{
+  "name": "@codenames/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/server.ts",
+    "./protocol": "./src/protocol.ts"
+  },
+  "dependencies": {
+    "@codenames/engine": "*",
+    "socket.io": "^4.8.1"
+  }
+}

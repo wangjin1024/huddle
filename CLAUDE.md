@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. It hosts two online, browser-based multiplayer games:
+This repo is **Huddle** (github.com/wangjin1024/huddle, served at huddle.kinddot.net), a site for cooperative team games only: no player-vs-player competition. It hosts three online, browser-based multiplayer games:
 
 - **Bomb Busters (炸弹克星)**, a cooperative deduction board game: `games/bomb-busters/*` (`@bomb-busters/*`).
 - **Regicide (弑君者)**, a cooperative card game played with a standard deck: `games/regicide/*` (`@regicide/*`).
+- **Codenames (代号)**, the cooperative (one team vs. the board) mode of the word game: `games/codenames/*` (`@codenames/*`).
 
 Each game has its own folder with the same three npm workspaces: `engine` (pure rules), `server` (Node + Socket.IO) and `client` (React + Vite), all TypeScript. A new game gets its own `games/<name>/` folder in the same shape. `host/` (`@huddle/host`) is the one Node service that runs them all in production.
 
@@ -15,7 +16,7 @@ Each game has its own folder with the same three npm workspaces: `engine` (pure 
 
 Run from the repo root:
 
-- `npm run dev`: the host (tsx watch, :3001) plus each game's Vite: Bomb Busters on :5173, Regicide on :5174. Each Vite forwards its game's socket path to the host. Open http://localhost:5173/boom-buster/ or http://localhost:5174/regicide/.
+- `npm run dev`: the host (tsx watch, :3001) plus each game's Vite: Bomb Busters on :5173, Regicide on :5174, Codenames on :5175. Each Vite forwards its game's socket path to the host. Open http://localhost:5173/boom-buster/, http://localhost:5174/regicide/ or http://localhost:5175/codenames/.
 - `npm run build && npm start`, or `./run.sh` (adds `npm install` and PM2 via `ecosystem.config.cjs`): production on `$HOST:$PORT` (default `0.0.0.0:3001`; read from `.env`).
 - `npm test`: all tests (Vitest): every game's engine and server, plus the host
 - `npx vitest run games/bomb-busters/engine/test/actions.test.ts -t "solo cut"`: one file or one named test
@@ -29,12 +30,13 @@ Production is `huddle.kinddot.net`, with Caddy reverse-proxying everything to th
 - `/`: `hub/index.html`, the static "Huddle" game picker (one card per game). Not part of the React build. Its EN/中文 text swaps via `data-i18n` keys and a small inline script. The language choice is saved under `huddle:lang`, the same key the game's `i18n.tsx` uses, so it carries over between them.
 - `/boom-buster/`: Bomb Busters. Rooms are at `/boom-buster/r/CODE`, and the socket is at `/boom-buster/socket.io`.
 - `/regicide/`: Regicide, laid out the same way (`/regicide/r/CODE`, `/regicide/socket.io`).
+- `/codenames/`: Codenames, the same again (`/codenames/r/CODE`, `/codenames/socket.io`).
 
 `host/src/app.ts` owns the one HTTP server: it serves the hub and each game's `client/dist` under the game's base path, and calls each game server's `attach(http)` to add its Socket.IO (with `destroyUpgrade: false`, so the games don't drop each other's websocket upgrades). Adding a game means adding it to `GAME_PATHS` and `createHost` there, to `host/src/main.ts`, and to the root `dev`/`build` scripts.
 
 Each game's base path is defined twice and both must match: `BASE_PATH` in `games/<game>/server/src/protocol.ts`, and `base` in `games/<game>/client/vite.config.ts`. Client code builds URLs from `src/paths.ts` (which uses `import.meta.env.BASE_URL`); never hard-code `/r/...`.
 
-The sections below describe Bomb Busters; Regicide follows the same structure and conventions (see its own section after them).
+The sections below describe Bomb Busters; Regicide and Codenames follow the same structure and conventions (see their own sections after them).
 
 ## Engine architecture (`games/bomb-busters/engine`)
 
@@ -80,6 +82,17 @@ Product and rules decisions: `docs/regicide/PRD.md`. Rules reference: `game_rule
 - Every engine event except `turnStarted` is public, so the room log stores them as-is. Diamonds draws log counts per player, never the cards.
 - Test helpers: `games/regicide/engine/test/helpers.ts` (`game({...hands}, { tavern, castle, discard })`, `play`, `discard`, `act`).
 - Visual design reference: the "Regicide UI" canvas artifact (https://claude.ai/artifact/294Kd5UyiU1TzjcLvsc3nn).
+
+## Codenames (`games/codenames/*`)
+
+Product and rules decisions: `docs/codenames/PRD.md` (§9 records each decision). Rules reference: `game_rules/codenames_game_rules.md` (Chinese). Only the guide's cooperative mode is built; the red-vs-blue mode is out of scope for Huddle.
+
+- Engine: `words/en.ts`, `words/zh.ts` (400 built-in words each; a test checks count, uniqueness and that no two overlap), `words.ts` (`overlaps`, `checkClue`, `checkPlayerWord`), `setup.ts` (`createGame`, `createGameFromBoard`, `drawWords`), `rules.ts` (`captainOf`, `agreedPick`), `actions.ts` (`applyAction(state, action)`: `clue`, `pick`, `confirm`), `view.ts` (`viewFor(state, playerId, connected)`).
+- Hidden information is the key. `viewFor` sends `key` only to the Spymaster (and to everyone once the game is over); Operatives get `revealed[i]` for revealed cards only. Card ids are board positions 0–24.
+- Agreement: every connected Operative must pick the same word (or `stop`), then the clue's captain confirms. Captaincy rotates per clue; `confirm` takes the connected ids, so the engine stays pure while offline players don't block. Going offline clears that player's pick (`dropPick`).
+- Room-level features live in `server/src/rooms.ts`, not the engine: the Spymaster choice, board language, player-added words (Chinese rooms, ≤3 each, always on the board, hidden from non-hosts until the deal, cleared each game), and the chat. The chat keeps only the current round, and at most its last 10 lines (`CHAT_KEEP`): it is emptied on `turnEnded`, on start and on Play again. The Spymaster can't post while a game is live.
+- Test helpers: `games/codenames/engine/test/helpers.ts` (`game()`, `clue`, `pick`, `confirm`, `agree`).
+- Visual design reference: the "Codenames UI" canvas artifact (https://claude.ai/artifact/Ku53c53xAUGTmoJku26gYV).
 
 ## Product scope
 
