@@ -79,7 +79,7 @@ These are taken from the rules guide. Items marked **[OQ-n]** depend on open que
 - Allowed for value V if the active player holds all 4 uncut V wires, **or** 2 V wires are already cut and the active player holds the other 2.
 - Effect: those wires are revealed and cut. The detonator does not move.
 - Solo cut is always optional. A qualifying player may dual cut instead.
-- **Yellow solo cut**: allowed only when **all remaining uncut yellow wires** are in the active player's hand **and** every blue wire is already cut, so the yellows are the final cut of the game. With 2 yellows this means holding both. (Yellow wires are always cut in pairs, so a lone leftover yellow can't happen.)
+- **Yellow solo cut**: allowed only when **all remaining uncut yellow wires** are in the active player's hand **and** either every blue wire in the game is already cut (the yellows are the final cut), **or** the yellows are the only wires that player has left to cut (their blue wires are all cut; red wires can't be cut). With 2 yellows this means holding both. (Yellow wires are always cut in pairs, so a lone leftover yellow can't happen.)
 
 **No legal action**
 - If the active player can neither dual cut nor solo cut, they see a "No legal moves" notice and tap to pass. The pass is recorded in the action log.
@@ -146,7 +146,7 @@ Rules the guide leaves unclear, and how each was settled. All are decided.
 | ~~OQ-10~~ | ~~Solo cut optional?~~ | **Decided:** optional. |
 | ~~OQ-11~~ | ~~Difficulty levels~~ | **Decided:** simple = 1 red; medium = 1 red + 2 yellow; hard = 2 red + 2 yellow. |
 | ~~OQ-12~~ | ~~Yellow-wire rules~~ | **Decided:** adopted as written (decimal values for sorting, cut by declaring "yellow", required to win). They don't have to match the physical game. |
-| ~~OQ-13~~ | ~~Yellow solo cut~~ | **Decided:** only when you hold both, and only after all blue wires are cut. |
+| ~~OQ-13~~ | ~~Yellow solo cut~~ | **Decided:** only when you hold both, and only after all blue wires are cut, or when the yellows are your last wires to cut. |
 
 ## 10. Roadmap after MVP
 

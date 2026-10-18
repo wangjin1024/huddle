@@ -53,14 +53,18 @@ export function dualCutGuesses(state: GameState, player: Player): Guess[] {
 /**
  * Solo cut V is allowed when the player holds every remaining uncut V wire.
  * Blue wires are only ever cut in pairs or as a full set, so this covers both
- * "all 4" and "the last 2 after 2 were cut". Yellow additionally requires every
- * blue wire to be cut, so the yellows are the final cut of the game.
+ * "all 4" and "the last 2 after 2 were cut". Yellow additionally requires either
+ * every blue wire in the game to be cut (the yellows are the final cut), or the
+ * yellows to be the only wires this player has left to cut. Otherwise their only
+ * move would be naming "yellow" on a teammate, which can't succeed.
  */
 export function canSoloCut(state: GameState, player: Player, value: Guess): boolean {
   const mine = uncutMatching(player.rack, value);
   if (mine.length === 0) return false;
   if (mine.length !== uncutMatching(allWires(state), value).length) return false;
-  return value !== 'yellow' || allBlueCut(state);
+  if (value !== 'yellow') return true;
+  const myBlueLeft = player.rack.some((w) => w.color === 'blue' && !w.cut);
+  return allBlueCut(state) || !myBlueLeft;
 }
 
 export function soloCutValues(state: GameState, player: Player): Guess[] {

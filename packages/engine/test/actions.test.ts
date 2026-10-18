@@ -220,6 +220,28 @@ describe('solo cut', () => {
     expect(result.ok && result.state.phase).toBe('won');
   });
 
+  it('allows both yellows early when they are the only wires the player has left to cut', () => {
+    // A: blue 1 (already cut), yellow 2.1, red 4.5, yellow 7.1. B still has blue wires.
+    const s = playing({ A: [b(1), y(2), r(4), y(7)], B: [b(1), b(5), b(9)] }, { difficulty: 'hard' });
+    expect(errorOf(s, { type: 'soloCut', player: 'A', value: 'yellow' })).toBe('SOLO_CUT_NOT_ALLOWED');
+    s.players[0]!.rack[0]!.cut = true;
+    s.players[1]!.rack[0]!.cut = true;
+    expect(legalActions(s, 'A').soloCut).toEqual(['yellow']);
+    const result = applyAction(s, { type: 'soloCut', player: 'A', value: 'yellow' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.players[0]!.rack.filter((w) => w.color === 'yellow').every((w) => w.cut)).toBe(true);
+    expect(result.state.phase).toBe('playing'); // B's blue wires are still uncut
+    expect(result.state.mistakes).toBe(0);
+  });
+
+  it('does not allow an early yellow solo cut while the player still has a blue wire', () => {
+    const s = playing({ A: [b(1), y(2), y(7), b(9)], B: [b(1), b(9)] }, { difficulty: 'medium' });
+    s.players[0]!.rack[0]!.cut = true;
+    s.players[1]!.rack[0]!.cut = true;
+    expect(legalActions(s, 'A').soloCut).toEqual([]);
+  });
+
   it('is optional: a qualifying player may dual cut instead', () => {
     const s = playing({ A: [b(3), b(3), b(3), b(3), b(8)], B: [b(1), b(8)] });
     const next = act(s, { type: 'dualCut', player: 'A', targetWireId: wid(s, 'B', 1), guess: 8 });
